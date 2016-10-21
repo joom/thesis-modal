@@ -3,7 +3,7 @@ FILENAME=thesis
 default: preview
 
 compile:
-	lhs2TeX -o $(FILENAME).tex $(FILENAME).lagda --agda
+	lhs2TeX -o $(FILENAME).tex source.lagda --agda
 	pdflatex $(FILENAME).tex
 	bibtex $(FILENAME)
 	pdflatex $(FILENAME).tex
