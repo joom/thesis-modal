@@ -7,19 +7,18 @@
   % Imports and Styling {{{
   \RequirePackage{amsmath}
   \documentclass[11pt]{article}
-  \bibliographystyle{jfp}
+  \bibliographystyle{plain}
   \def\textmu{}
 
   %include agda.fmt
+  \usepackage{natbib}
   \usepackage{fullpage}
   \usepackage{textgreek} % not reproducible without textgreek
   \usepackage{bussproofs}
   \usepackage{color}
-  \usepackage{proof}
   \usepackage{enumerate}
   \usepackage{url}
   \usepackage{hyperref}
-  \usepackage{authordate1-4}
   \usepackage{xcolor}
   \hypersetup{colorlinks = true, allcolors = {blue}}
   \RequirePackage{graphicx}
@@ -30,7 +29,6 @@
   \newcommand{\nop}[0]{} % used to reconcile vim folds and latex curly braces
   \newcommand{\ToDo}[1]{{\color{blue} ToDo: #1}}
   \newcommand{\tocite}[0]{{\color{red} [cite]}\xspace}
-  \newcommand{\citey}[1]{\shortcite{#1}}
   %  }}}
 
   % Math and code commands {{{
@@ -51,7 +49,7 @@
 
 % }}}
 
-% Title, Abstract, TOC {{{
+% Title, Abstract, TOC, Intro {{{
 
 \title{Verified Compilation of Modal Logic \\
        Based Functional Language ML5 to JavaScript}
@@ -66,7 +64,7 @@
   Curry-Howard correspondence describes a language that corresponds to
   propositional logic.  If modal logic is an extension of propositional logic,
   then what language corresponds to modal logic? If there is one, then what is
-  it good for?  Murphy's dissertation \citey{tom7} argues that a programming
+  it good for?  Murphy's dissertation \cite{tom7} argues that a programming
   language designed based on modal type systems can provide elegant
   abstractions to organize local resources on different computers.  In this
   thesis, I limit his argument to simple web programming and claim that a modal
@@ -79,10 +77,6 @@
 
 \tableofcontents
 
-% }}}
-
-% Introduction {{{
-
 \section{Introduction}
 
 % }}}
@@ -91,16 +85,52 @@
 
 \section{Background}
 
+  In non-modal propositional logic, certain kinds of notations for inference
+  rules obscure the distinction between a proposition and a judgment.
+  Consider the following conjunction intro rule:
+  \begin{prooftree}
+    \AxiomC{$A$}
+    \AxiomC{$B$}
+    \BinaryInfC{$A \land B$}
+  \end{prooftree}
+  Now are $A$, $B$ and $A \land B$ in this rule propositions or judgments? The
+  correct answer is judgments, because what this notation means is the
+  following sentence: ``$A \land B$ is true, if $A$ is true and $B$ is true.''
+  The ambiguity about the notions of proposition and judgment can be removed by
+  adopting a new notation for judgments; we would now write ``$A$ true'' or
+  ``$\vdash A$'' for a judgment, instead of just ``$A$''.
+
+  This notation and the inference rule above do not cover the case in which a
+  proposition depends on other propositions, i.e. when we want to say ``$A$
+  follows from $\Gamma$''. We accept ``$\Gamma \vdash A$'' as the default
+  notation such a judgment.  If we apply these changes to our inference rules,
+  we would get
+  \begin{prooftree}
+    \AxiomC{$\Gamma \vdash A$}
+    \AxiomC{$\Gamma \vdash B$}
+    \BinaryInfC{$\Gamma \vdash A \land B$}
+  \end{prooftree}
+  The distinction between a proposition and judgment does not come up often
+  when we think about non-modal logic, so this distinction might seem like a
+  nuisance. However it will be our gateway to understanding modal logic.
+  \cite{judgmental}
+
+  I think it should be clarified if an incorrect or unproved judgment is still
+  a judgment. In other words, is the word judgment a way to express truth or is
+  it just a form? In this regard, I will follow Martin-Löf's fourfold
+  terminology \cite{pml}: judgment and proposition are ``stripped of [their]
+  epistemic force'', they describe the state that those concepts have before
+  ``[they have] been proved or become known''. On the other hand, the terms
+  ``evident judgment'' and ``true proposition'' imply that there is a proof.
+
   % Modal Logic {{{
   \subsection{Modal logic}
 
   % }}}
 
-  % Lambda 5 {{{
-  \subsection{Lambda 5}
-  In the previous section we presented a propositional modal logic, and the
-  next step is to define the proof terms that correspond to the logic we
-  defined.
+  % Hybrid logic {{{
+  \subsection{Hybrid logic}
+
 
   % }}}
 
@@ -112,6 +142,9 @@
 
   % MinML5 {{{
   \subsection{MinML5}
+  In the previous section we presented a propositional modal logic, and the
+  next step is to define the proof terms that correspond to the logic we
+  defined.
 
   % }}}
 
@@ -129,6 +162,11 @@
 
   % Lambda lifting {{{
   \subsection{Lambda lifting}
+
+  % }}}
+
+  % Monomorphization {{{
+  \subsection{Monomorphization}
 
   % }}}
 
