@@ -6,8 +6,7 @@
 
   % Imports and Styling {{{
   \RequirePackage{amsmath}
-  \documentclass[11pt]{article}
-  \bibliographystyle{plain}
+  \documentclass[11pt,draft]{westhesis}
   \def\textmu{}
 
   %include agda.fmt
@@ -15,13 +14,14 @@
   \usepackage{fullpage}
   \usepackage{textgreek} % not reproducible without textgreek
   \usepackage{bussproofs}
+  \usepackage{epigraph}
   \usepackage{color}
   \usepackage{enumerate}
   \usepackage{url}
-  \usepackage{hyperref}
   \usepackage{xcolor}
-  \hypersetup{colorlinks = true, allcolors = {blue}}
   \RequirePackage{graphicx}
+  \usepackage{hyperref}
+  \hypersetup{backref = true, colorlinks = true, allcolors = {blue}}
   % }}}
 
   % Editorial commands {{{
@@ -49,23 +49,35 @@
 
 % }}}
 
-% Title, Abstract, TOC, Intro {{{
+% Title, Abstract, TOC {{{
 
-\title{Verified Compilation of Modal Logic \\
-       Based Functional Language ML5 to JavaScript}
-\author{Joomy Korkut\\ Wesleyan University}
-\date{}
+\title{Verified Compilation of ML5 to JavaScript}
+\author{Joomy Korkut}
+\advisor{Daniel R. Licata}
+\department{Mathematics and Computer Science}
+\submitdate{April 2017}
+\copyrightyear{2017}
 
+\makeindex
 \begin{document}
 
-\maketitle
+\begin{dedication}
+\epigraph{Forgotten were the elementary rules of logic, that extraordinary
+  claims require extraordinary evidence and that what can be asserted without
+  evidence can also be dismissed without evidence.}{\textit{Christopher
+  Hitchens}}
+\end{dedication}
+
+\begin{acknowledgements}
+
+\end{acknowledgements}
 
 \begin{abstract}
   Curry-Howard correspondence describes a language that corresponds to
   propositional logic.  If modal logic is an extension of propositional logic,
   then what language corresponds to modal logic? If there is one, then what is
   it good for?  Murphy's dissertation \cite{tom7} argues that a programming
-  language designed based on modal type systems can provide elegant
+  language designed basezd on modal type systems can provide elegant
   abstractions to organize local resources on different computers.  In this
   thesis, I limit his argument to simple web programming and claim that a modal
   logic based language provides a way to write readable code and correct web
@@ -75,8 +87,16 @@
   languages, the last one of which is a very limited subset of JavaScript.
 \end{abstract}
 
+\frontmatter
+\maketitle
+\makededication
+\makeack
+\makeabstract
 \tableofcontents
+\mainmatter
+% }}}
 
+% Introduction {{{
 \section{Introduction}
 
 % }}}
@@ -85,6 +105,7 @@
 
 \section{Background}
 
+  % Background intro {{{
   In non-modal propositional logic, certain kinds of notations for inference
   rules obscure the distinction between a proposition and a judgment.
   Consider the following conjunction intro rule:
@@ -122,6 +143,7 @@
   epistemic force'', they describe the state that those concepts have before
   ``[they have] been proved or become known''. On the other hand, the terms
   ``evident judgment'' and ``true proposition'' imply that there is a proof.
+  % }}}
 
   % Modal Logic {{{
   \subsection{Modal logic}
@@ -130,7 +152,6 @@
 
   % Hybrid logic {{{
   \subsection{Hybrid logic}
-
 
   % }}}
 
@@ -190,10 +211,12 @@
 
 \section{Conclusion}
 
-
 % }}}
 
 % End {{{
+\bibliographystyle{abbrv}
 \bibliography{paper}
+\printindex
+\backmatter
 \end{document}
 % }}}
