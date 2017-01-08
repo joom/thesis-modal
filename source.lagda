@@ -10,7 +10,7 @@
   \def\textmu{}
 
   %include agda.fmt
-  \usepackage{natbib, fullpage, textgreek, bussproofs, epigraph, color,
+  \usepackage{natbib, fullpage, textgreek, bussproofs, epigraph, color, float,
               enumerate, url, xcolor, graphicx, hyperref}
   \hypersetup{pdftex, backref = true, colorlinks = true, allcolors = {blue}}
   \setcounter{tocdepth}{4}
@@ -29,6 +29,8 @@
   \newcommand{\set}[1]{\left\{#1\right\}}
   \DeclareRobustCommand{\shamrock}{\raisebox{-.035em}{\includegraphics[width=.75em, height=.75em]{symbols/command}}\nop}
   \DeclareRobustCommand{\col}{\raisebox{-.035em}{\includegraphics[width=.30em, height=.75em]{symbols/colon}}\nop}
+  \newcommand{\conc}[2]{#1 \text{<#2>}}
+  \newcommand{\val}[2]{#1 \sym #2}
   % }}}
 
   % Unicode chars not supported by lhs2TeX {{{
@@ -69,7 +71,7 @@
   Curry-Howard correspondence describes a language that corresponds to
   propositional logic.  If modal logic is an extension of propositional logic,
   then what language corresponds to modal logic? If there is one, then what is
-  it good for?  Murphy's dissertation \cite{tom7} argues that a programming
+  it good for?  Murphy's dissertation\cite{tom7} argues that a programming
   language designed based on modal type systems can provide elegant
   abstractions to organize local resources on different computers.  In this
   thesis, I limit his argument to simple web programming and claim that a modal
@@ -119,7 +121,7 @@
   ``$\vdash A$'' for a judgment, instead of just ``$A$''.
 
   This notation and the inference rule above do not cover the case in which a
-  proposition depends on other propositions, i.e. when we want to say ``$A$
+  proposition depends on other propositions, i.e.\ when we want to say ``$A$
   follows from $\Gamma$''. We accept ``$\Gamma \vdash A$'' as the default
   notation such a judgment.  If we apply these changes to our inference rules,
   we would get
@@ -136,7 +138,7 @@
   I think it should be clarified if an incorrect or unproved judgment is still
   a judgment. In other words, is the word judgment a way to express truth or is
   it just a form? In this regard, I will follow Martin-Löf's fourfold
-  terminology \cite{pml}: judgment and proposition are ``stripped of [their]
+  terminology\cite{pml}: judgment and proposition are ``stripped of [their]
   epistemic force'', they describe the state that those concepts have before
   ``[they have] been proved or become known''. On the other hand, the terms
   ``evident judgment'' and ``true proposition'' imply that there is a proof.
@@ -154,32 +156,167 @@
   possibly different set of truths. It is possible for a proposition to be true
   in one world and false in another.
 
-  To illustrate the concept, let's think of a prison that has as many cells as
-  our worlds. Suppose in each cell, there is a person who is locked inside.
+  To illustrate the concept, let's think of a prison that have cells, and each
+  correspond to a world in our modal logic.
+  Suppose in each cell, there is a person who is locked inside.
   Alice is in a cell with a window, while Bob is in a windowless one.
-  Alice can look outside and learn that it is sunny today, however Bob would
+  Alice can look outside and learn that it is sunny, however Bob would
   not be able to do that. In Alice's room you have proof of the nice weather,
   but in Bob's room you do not.
 
-  Even though Alice, Bob and other in different cells, we have a warden,
-  Walter, that provides communication among everyone. Alice can take a photo of
+  Let's express this in modal logic. Let $A$ be the proposition that says it is
+  sunny, and $w$ and $w'$ be the worlds of Alice and Bob respectively.
+  We cannot simply say ``$A$ true'', because we did not specify in which
+  cell that is true. We should say ``$A$ is true in Alice's world'',
+  for which we will use the notation ``\conc{$A$}{w}''.
+
+  Alice, Bob and others in different cells, have a warden, whose name is Walter.
+  Walter provides communication among everyone. Alice can take a photo of
   outside and send it in an envelope to Bob through Walter. Now Bob also has a
-  proof that it is sunny today, and he can use it later.
+  proof that it is sunny, and he can use it later.
 
   From a modal logic perspective, it matters to regulate who can send envelopes
-  to whom. If we call our set of prisoners, i.e. worlds, $W$, then this
-  regulation is achieved by a relation $R \subseteq W \times W$. The pair of
-  those, $\mathfrak{F} = (W,R)$ is called a frame.
+  to whom. If we call our set of prisoners, i.e.\ worlds, $W$, then this
+  regulation is achieved by a relation $R \subseteq W \times W$. $wRw'$ reads
+  as
 
-  The properties of the relation $R$ defines the kind of logic we have. For our
-  purposes we will only deal with the relation that is reflexive, transitive
-  and symmetric, i.e. an equivalence relation. This kind of logic is called
+  The pair of those, $\mathfrak{F} = (W,R)$ is called a frame.
+  The properties of the relation $R$ defines the kind of logic we have.
+  The logic with the relation that is reflexive, transitive
+  and symmetric, i.e.\ an equivalence relation, is called
   \textbf{IS5}.\cite{lecture15-pf}
+  For our purposes we will deal with the case that $R$ is a full relation
+  $R = W \times W$, in other words every world will be accessible from any
+  other.  We call this relation \textbf{IS$5^\cup$}.\cite{tom7}
+
+  In \autoref{fig:is5cup}, we state the axioms and inference rules of
+  IS$5^\cup$ for the connectives that are familiar from non-modal propositional
+  logic, namely $\land, \lor$ and $\supset$ (reads ``implies'', $\Rightarrow$
+  is another notation for it).
+
+  \begin{figure}[ht]
+    \caption{Axioms and inference rules of IS$5^\cup$.}
+    \label{fig:is5cup}
+    \begin{center}
+      \AxiomC{}
+      \RightLabel{hyp} % or intro 1
+      \UnaryInfC{$\Gamma,\conc{A}{w} \vdash \conc{A}{w}$}
+      \DisplayProof
+    \end{center}\bigskip
+
+    \begin{center}
+      \AxiomC{$\Gamma \vdash \conc{A}{w}$}
+      \AxiomC{$\Gamma \vdash \conc{A}{w}$}
+      \RightLabel{$\land_i$} % and intro
+      \BinaryInfC{$\Gamma \vdash \conc{A \land B}{w}$}
+      \DisplayProof
+      \hskip 1.5em
+      \AxiomC{$\Gamma \vdash \conc{A \land B}{w}$}
+      \RightLabel{$\land_{e_1}$} % and elim 1
+      \UnaryInfC{$\Gamma \vdash \conc{A}{w} $}
+      \DisplayProof
+      \hskip 1.5em
+      \AxiomC{$\Gamma \vdash \conc{A \land B}{w}$}
+      \RightLabel{$\land_{e_2}$} % and elim 2
+      \UnaryInfC{$\Gamma \vdash \conc{B}{w} $}
+      \DisplayProof
+    \end{center}\bigskip
+
+    \begin{center}
+      \AxiomC{$\Gamma \vdash \conc{A}{w}$}
+      \RightLabel{$\lor_{i_1}$} % or intro 1
+      \UnaryInfC{$\Gamma \vdash \conc{A \lor B}{w}$}
+      \DisplayProof
+      \hskip 1.5em
+      \AxiomC{$\Gamma \vdash \conc{B}{w}$}
+      \RightLabel{$\lor_{i_2}$} % or intro 2
+      \UnaryInfC{$\Gamma \vdash \conc{A \lor B}{w}$}
+      \DisplayProof
+    \end{center}\bigskip
+
+    \begin{center}
+      \AxiomC{$\Gamma \vdash \conc{A \lor B}{w'}$}
+      \AxiomC{$\Gamma,\conc{A}{w'} \vdash \conc{C}{w}$}
+      \AxiomC{$\Gamma,\conc{B}{w'} \vdash \conc{C}{w}$}
+      \RightLabel{$\lor_e$} % or elim
+      \TrinaryInfC{$\Gamma \vdash \conc{C}{w}$}
+      \DisplayProof
+    \end{center}\bigskip
+
+    \begin{center}
+      \AxiomC{$\Gamma, \conc{A}{w} \vdash \conc{B}{w}$}
+      \RightLabel{$\supset_i$} % implies intro
+      \UnaryInfC{$\Gamma \vdash \conc{A \supset B}{w}$}
+      \DisplayProof
+      \hskip 1.5em
+      \AxiomC{$\Gamma \vdash \conc{A \supset B}{w}$}
+      \AxiomC{$\Gamma \vdash \conc{A}{w}$}
+      \RightLabel{$\supset_e$} % implies elim
+      \BinaryInfC{$\Gamma \vdash \conc{B}{w}$}
+      \DisplayProof
+    \end{center}
+  \end{figure}
+
+  This is a good start, but if we want to make more general claims about
+  different worlds, these connectives do not suffice. Therefore we introduce
+  the $\Box$ (reads ``box'') and $\Diamond$ (reads ``diamond'') as new modal
+  connectives. $\Box A$ means $A$ is true for all worlds, and $\Diamond A$
+  means that $A$ is true for some world. The inference rules for $\Box$ and
+  $\Diamond$ are in \autoref{fig:is5cupBoxDiamond}.
+  Notice that we are using $w$ and $w'$ for concrete world variables, while
+  $\omega$ stands for a world that is universally quantified.
+
+  \begin{figure}[ht]
+    \caption{Inference rules for $\Box$ and $\Diamond$ in IS$5^\cup$}
+    \label{fig:is5cupBoxDiamond}
+    \begin{center}
+      \AxiomC{$\Gamma, \omega \text{ world} \vdash \conc{A}{$\omega$}$}
+      \RightLabel{$\Box_i$} % Box intro
+      \UnaryInfC{$\Gamma \vdash \conc{\Box A}{w}$}
+      \DisplayProof
+      \hskip 1.5em
+      \AxiomC{$\Gamma \vdash \conc{\Box A}{w'}$}
+      \RightLabel{$\Box_e$} % box elim
+      \UnaryInfC{$\Gamma \vdash \conc{A}{w}$}
+      \DisplayProof
+    \end{center}\bigskip
+    \begin{center}
+      \AxiomC{$\Gamma \vdash \conc{A}{w'}$}
+      \RightLabel{$\Diamond_i$} % Diamond intro
+      \UnaryInfC{$\Gamma \vdash \conc{\Diamond A}{w}$}
+      \DisplayProof
+      \hskip 1.5em
+      \AxiomC{$\Gamma \vdash \conc{\Diamond A}{w'}$}
+      \AxiomC{$\Gamma, \omega \text{ world}, \conc{A}{$\omega$} \vdash \conc{C}{w}$}
+      \RightLabel{$\Diamond_e$} % Diamond elim
+      \BinaryInfC{$\Gamma \vdash \conc{C}{w}$}
+      \DisplayProof
+    \end{center}
+  \end{figure}
+
+  % }}}
+
+  % Mobility {{{
+  \subsubsection{Mobility}
+  If we go back to the prison analogy, it is clear that the rules in
+  \autoref{fig:is5cup} are not enough to provide communication between
+  different worlds. However we have to think about what kinds of proofs Alice
+  can pass onto Bob on a paper. Given that Alice has a window in her cell and
+  Bob does not, can Alice teach Bob how to look up the weather by himself?
+  The answer is no, whatever Alice writes down, Bob will always have to ask
+  someone else. So we discover that communication between cells are restricted
+  by nature, because they can only pass notes on a paper, and they are confined
+  to their cells.
+
+  The restriction they have is communication. They cannot write down
+  information that contains communication from their cell.
+  \ToDo
+  Therefore we define a concept of mobility.
 
   % }}}
 
   % Hybrid logic {{{
-  \subsection{Hybrid logic}
+  \subsubsection{Hybrid logic}
 
   % }}}
 
