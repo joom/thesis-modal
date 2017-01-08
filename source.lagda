@@ -6,22 +6,15 @@
 
   % Imports and Styling {{{
   \RequirePackage{amsmath}
-  \documentclass[11pt,draft]{westhesis}
+  \documentclass[11pt]{westhesis} % add "final" flag when finished
   \def\textmu{}
 
   %include agda.fmt
-  \usepackage{natbib}
-  \usepackage{fullpage}
-  \usepackage{textgreek} % not reproducible without textgreek
-  \usepackage{bussproofs}
-  \usepackage{epigraph}
-  \usepackage{color}
-  \usepackage{enumerate}
-  \usepackage{url}
-  \usepackage{xcolor}
-  \RequirePackage{graphicx}
-  \usepackage{hyperref}
-  \hypersetup{backref = true, colorlinks = true, allcolors = {blue}}
+  \usepackage{natbib, fullpage, textgreek, bussproofs, epigraph, color,
+              enumerate, url, xcolor, graphicx, hyperref}
+  \hypersetup{pdftex, backref = true, colorlinks = true, allcolors = {blue}}
+  \setcounter{tocdepth}{4}
+  \setcounter{secnumdepth}{4}
   % }}}
 
   % Editorial commands {{{
@@ -62,9 +55,9 @@
 \begin{document}
 
 \begin{dedication}
-\epigraph{Forgotten were the elementary rules of logic, that extraordinary
+\epigraph{``Forgotten were the elementary rules of logic, that extraordinary
   claims require extraordinary evidence and that what can be asserted without
-  evidence can also be dismissed without evidence.}{\textit{Christopher
+  evidence can also be dismissed without evidence.''}{\textit{Christopher
   Hitchens}}
 \end{dedication}
 
@@ -77,7 +70,7 @@
   propositional logic.  If modal logic is an extension of propositional logic,
   then what language corresponds to modal logic? If there is one, then what is
   it good for?  Murphy's dissertation \cite{tom7} argues that a programming
-  language designed basezd on modal type systems can provide elegant
+  language designed based on modal type systems can provide elegant
   abstractions to organize local resources on different computers.  In this
   thesis, I limit his argument to simple web programming and claim that a modal
   logic based language provides a way to write readable code and correct web
@@ -91,7 +84,11 @@
 \maketitle
 \makededication
 \makeack
+\phantomsection
+\addcontentsline{toc}{section}{Abstract}
 \makeabstract
+\phantomsection
+\addcontentsline{toc}{section}{Table of Contents}
 \tableofcontents
 \mainmatter
 % }}}
@@ -133,7 +130,7 @@
   \end{prooftree}
   The distinction between a proposition and judgment does not come up often
   when we think about non-modal logic, so this distinction might seem like a
-  nuisance. However it will be our gateway to understanding modal logic.
+  nuisance. However it will be our gateway to understanding our modal logic.
   \cite{judgmental}
 
   I think it should be clarified if an incorrect or unproved judgment is still
@@ -147,6 +144,37 @@
 
   % Modal Logic {{{
   \subsection{Modal logic}
+
+  Modal logic is a broad field that includes various kinds of logic that deal
+  with relational structures that have different perspectives of truth.
+  \cite{blackburn}\cite{tom7} For our purposes, we only want to examine
+  intuitionistic modal logic with explicit worlds.
+
+  We call these perspectives of truth, ``possible worlds''. Each world holds a
+  possibly different set of truths. It is possible for a proposition to be true
+  in one world and false in another.
+
+  To illustrate the concept, let's think of a prison that has as many cells as
+  our worlds. Suppose in each cell, there is a person who is locked inside.
+  Alice is in a cell with a window, while Bob is in a windowless one.
+  Alice can look outside and learn that it is sunny today, however Bob would
+  not be able to do that. In Alice's room you have proof of the nice weather,
+  but in Bob's room you do not.
+
+  Even though Alice, Bob and other in different cells, we have a warden,
+  Walter, that provides communication among everyone. Alice can take a photo of
+  outside and send it in an envelope to Bob through Walter. Now Bob also has a
+  proof that it is sunny today, and he can use it later.
+
+  From a modal logic perspective, it matters to regulate who can send envelopes
+  to whom. If we call our set of prisoners, i.e. worlds, $W$, then this
+  regulation is achieved by a relation $R \subseteq W \times W$. The pair of
+  those, $\mathfrak{F} = (W,R)$ is called a frame.
+
+  The properties of the relation $R$ defines the kind of logic we have. For our
+  purposes we will only deal with the relation that is reflexive, transitive
+  and symmetric, i.e. an equivalence relation. This kind of logic is called
+  \textbf{IS5}.\cite{lecture15-pf}
 
   % }}}
 
@@ -214,7 +242,7 @@
 % }}}
 
 % End {{{
-\bibliographystyle{abbrv}
+\bibliographystyle{plain}
 \bibliography{paper}
 \printindex
 \backmatter
