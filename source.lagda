@@ -21,7 +21,7 @@
   \newcommand{\Red}[1]{{\color{red} #1}}
   \newcommand{\nop}[0]{} % used to reconcile vim folds and latex curly braces
   \newcommand{\ToDo}[1]{{\color{blue} ToDo: #1}}
-  \newcommand{\tocite}[0]{{\color{red} [cite]}\xspace}
+  \newcommand{\tocite}[1]{{\color{red} [cite #1]}\xspace}
   %  }}}
 
   % Math and code commands {{{
@@ -177,8 +177,7 @@
 
   From a modal logic perspective, it matters to regulate who can send envelopes
   to whom. If we call our set of prisoners, i.e.\ worlds, $W$, then this
-  regulation is achieved by a relation $R \subseteq W \times W$. $wRw'$ reads
-  as
+  regulation is achieved by a relation $R \subseteq W \times W$.
 
   The pair of those, $\mathfrak{F} = (W,R)$ is called a frame.
   The properties of the relation $R$ defines the kind of logic we have.
@@ -191,8 +190,8 @@
 
   In \autoref{fig:is5cup}, we state the axioms and inference rules of
   IS$5^\cup$ for the connectives that are familiar from non-modal propositional
-  logic, namely $\land, \lor$ and $\supset$ (reads ``implies'', $\Rightarrow$
-  is another notation for it).
+  logic, namely $\top, \bot, \land, \lor$ and $\supset$ (reads ``implies'',
+  $\Rightarrow$ is another notation for it).
 
   \begin{figure}[ht]
     \caption{Axioms and inference rules of IS$5^\cup$.}
@@ -202,6 +201,12 @@
       \RightLabel{hyp} % or intro 1
       \UnaryInfC{$\Gamma,\conc{A}{w} \vdash \conc{A}{w}$}
       \DisplayProof
+      \hskip 1.5em
+      \AxiomC{}
+      \RightLabel{$\top$} % top
+      \UnaryInfC{$\Gamma \vdash \conc{\top}{w}$}
+      \DisplayProof
+      \hskip 1.5em
     \end{center}\bigskip
 
     \begin{center}
@@ -296,8 +301,47 @@
 
   % }}}
 
+  % Hybrid logic {{{
+  \subsubsection{Hybrid Logic and Quantifiers}
+
+  Even though $\Box$ and $\Diamond$ are introduced as modal connectives,
+  they are not as expressive as we like. Moreover, for any person who
+  is familiar with first-order logic, universal and existential quantifiers
+  ($\forall$ and $\exists$) are more intuitive.
+  For that reason, we will replace them with three different connectives:
+  $\forall, \exists$ and \texttt{at}.
+  The inference rules for them are presented in \autoref{fig:is5hybrid}.
+
+  $A\ \texttt{at}\ w$ is a proposition that is an internalization of the
+  $\conc{A}{w}$ judgment, just like $A \supset B$ is an internalization
+  of the $A \vdash B$ judgment. \cite{tom7}
+
+  $\forall \omega . A$ means ``for all worlds $\omega$, the proposition A is
+  true''.  Similarly, $\exists \omega . A$ means ``there exists a world
+  $\omega$ such that the proposition A is true''.
+  Notice that our propositions now can contain references to worlds. In other
+  words, $\omega$ is a bound variable for a world in the proposition $A$ above.
+
+  % todo tethering
+
+  \begin{figure}[ht]
+    \caption{Inference rules of hybrid connectives for IS$5^\cup$}
+    \label{fig:is5hybrid}
+    \begin{center}
+      \AxiomC{$\Gamma \vdash N : \conc{A}{w'}$}
+      \RightLabel{$\texttt{at}_i$} % at intro
+      \UnaryInfC{$\Gamma \vdash \conc{A\ \texttt{at}\ \text{w'}}{w}$}
+      \DisplayProof
+      % \hskip 1.5em
+    \end{center}
+  \end{figure}
+
+  % }}}
+
   % Mobility {{{
-  \subsubsection{Mobility}
+  \subsection{Lambda 5 and Mobility}
+
+
   If we go back to the prison analogy, it is clear that the rules in
   \autoref{fig:is5cup} are not enough to provide communication between
   different worlds. However we have to think about what kinds of proofs Alice
@@ -306,19 +350,75 @@
   The answer is no, whatever Alice writes down, Bob will always have to ask
   someone else. So we discover that communication between cells are restricted
   by nature, because they can only pass notes on a paper, and they are confined
-  to their cells.
+  to their cells. We will later call the process of writing down data
+  ``marshaling''.
 
   The restriction they have is communication. They cannot write down
   information that contains communication from their cell.
-  \ToDo
-  Therefore we define a concept of mobility.
+  Therefore we define a concept of mobility in \autoref{fig:l5Mobile} and then
+  a communication inference rule in \autoref{fig:l5get}.
+
+  \begin{figure}[ht]
+    \caption{Mobility judgment for Lambda 5}
+    \label{fig:l5Mobile}
+    \begin{center}
+      \AxiomC{}
+      \RightLabel{$\top_m$} % top mobile
+      \UnaryInfC{$\top$ mobile}
+      \DisplayProof
+      \hskip 1.5em
+      \AxiomC{}
+      \RightLabel{$\texttt{at}_m$} % at mobile
+      \UnaryInfC{$A\ \texttt{at}$\ w mobile}
+      \DisplayProof
+      \hskip 1.5em
+      \AxiomC{}
+      \RightLabel{$\shamrock_m$} % at mobile
+      \UnaryInfC{$\shamrock A$\ mobile}
+      \DisplayProof
+    \end{center}\bigskip
+
+    \begin{center}
+      \AxiomC{$A$\ mobile}
+      \AxiomC{$B$\ mobile}
+      \RightLabel{$\land_m$} % and mobile
+      \BinaryInfC{$A\land B$\ mobile}
+      \DisplayProof
+      \hskip 1.5em
+      \AxiomC{$A$\ mobile}
+      \AxiomC{$B$\ mobile}
+      \RightLabel{$\lor_m$} % or mobile
+      \BinaryInfC{$A\lor B$\ mobile}
+      \DisplayProof
+    \end{center}\bigskip
+
+    \begin{center}
+      \AxiomC{$A$\ mobile}
+      \RightLabel{$\forall_m$} % forall mobile
+      \UnaryInfC{$\forall \omega . A$\ mobile}
+      \DisplayProof
+      \hskip 1.5em
+      \AxiomC{$A$\ mobile}
+      \RightLabel{$\exists_m$} % exists mobile
+      \UnaryInfC{$\exists \omega . A$\ mobile}
+      \DisplayProof
+    \end{center}
+  \end{figure}
+
+  \begin{figure}[ht]
+    \caption{Communication inference rule for Lambda 5}
+    \label{fig:l5get}
+    \begin{center}
+      \AxiomC{$A$ mobile}
+      \AxiomC{$\Gamma \vdash N : \conc{A}{w'}$}
+      \RightLabel{get} % get
+      \BinaryInfC{$\Gamma \vdash \texttt{get}\ N : \conc{A}{w}$}
+      \DisplayProof
+    \end{center}
+  \end{figure}
 
   % }}}
 
-  % Hybrid logic {{{
-  \subsubsection{Hybrid logic}
-
-  % }}}
 
 % }}}
 
