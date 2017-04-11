@@ -57,6 +57,7 @@
   \DeclareUnicodeCharacter{7503}{$^\text{k}$}
   \DeclareUnicodeCharacter{739}{$^\text{x}$}
   \DeclareUnicodeCharacter{7504}{$^\text{m}$}
+  \DeclareUnicodeCharacter{8338}{$_\text{o}$}
   \DeclareUnicodeCharacter{8709}{$\varnothing$} % overwriting \emptyset
   \DeclareUnicodeCharacter{8984}{$\shamrock$}
   \DeclareUnicodeCharacter{10626}{$\col$}
@@ -200,7 +201,7 @@
   to whom. If we call our set of prisoners, i.e.\ worlds, $W$, then this
   regulation is achieved by a relation $R \subseteq W \times W$.
 
-  The pair of those, $\mathfrak{F} = (W,R)$ is called a frame.
+  % The pair of those, $\mathfrak{F} = (W,R)$ is called a frame.
   The properties of the relation $R$ defines the kind of logic we have.
   The logic with the relation that is reflexive, transitive
   and symmetric, i.e.\ an equivalence relation, is called
@@ -520,7 +521,7 @@
 
   \subsubsection{Conversion from MinML5 to CPS}
   % }}}
-
+c
   % Closure conversion {{{
   \subsection{Closure conversion}
 
@@ -529,11 +530,204 @@
 
   % Lambda lifting {{{
   \subsection{Lambda lifting}
+  Our goal with closure conversion was that we would be able to move the lambda
+  terms as we like. We want to move all of them to the beginning so that we can
+  give them names and refer to them with their specific names later. This will
+  especially be necessary for the network communication, we need names to know
+  which functions are sending and receiving data at a given point.
+
+  Therefore we will define a function that changes the program structure, but
+  keeps using the closure language we defined before.
+  \begin{code}
+  entryPoint : ∀ {w}
+             → [] ⊢ ⋆< w >
+             → Σ (List (Id × Type × World))
+                 (λ newbindings → All (λ { (_ , σ , w') → [] ⊢ₒ ↓ σ < w' > }) newbindings
+                 × (toCtx newbindings) ⊢ ⋆< w >)
+  \end{code}
+  The program structure in the previous language is just a closed continuation
+  |[] ⊢ₒ ⋆< w >|.  In the new structure, we will have a list of closed terms,
+  which are actually the lambda terms we are relocating, and a continuation
+  that should be able to use the list of closed terms. However we cannot simply
+  have a list of terms, because the type of terms change according to the
+  context, type and world. We need some notion of a list that can hold values
+  of different types. Moreover, we do not want a loose definition, we want to
+  use the same list to be the context of the remaning continuation. What we can
+  do is to use an existential pair to say that there exists a list of triple of
+  names, types and worlds that satisfy a certain property. If we call this
+  property |P : List (Id × Type × World) → Set|, then the existential type
+  would be written as |Σ (List (Id × Type × World)) (λ xs → P xs)|.  Now we
+  need to specify what |P| is. Since we have two things we have to show, we can
+  use a product, i.e.\ pair.
+
+  The first part of the product will be a special kind of list called |All|.
+  \footnote{The type |All| is defined in Agda standard library, in
+  |Data.List.All|.  Morally it has the same constructors as a list, but it
+  takes a predicate of |P : A → Set| and a list |xs : List A|.  Each element in
+  the list is mapped to a |Set| using the predicate, and a value of type |All P
+  xs| is constructed by providing values of type |P x| for each |x| in |xs|.
+  Let's see a simple example: the type |All (λ n → n ≡ n) (1 ∷ 2 ∷ 3 ∷ [])| can
+  take a value |refl ∷ refl ∷ refl ∷ []|, note that the first |refl| is of type
+  |1 ≡ 1|, and the second is of type |2 ≡ 2| and so on.  Also note that the
+  constructors |[]| and |_∷_| are overloaded and they can be used for both
+  lists and the type |All|.} We will use it to guarantee that our list will be
+  of the exact same length as the list in the existential quantifier, and to
+  ensure that each term in the list is of the right type. The second part of
+  the product is the remaning continuation, but we are adding the list of
+  gathered terms to the context. Since we started the entire process with a
+  closed term, we will not have anything else in the context.
+
+  The definition of |entryPoint| requires functions to lift values and
+  continuations. We state their types as such:
+
+  \begin{code}
+    liftValue : ∀ {Γ τ w} → ℕ
+              → Γ ⊢ₒ ↓ τ < w >
+              → ℕ × Σ (List (Id × Typeₒ × World))
+                       (λ newbindings → All (λ { (_ , σ , w') → [] ⊢ₒ ↓ σ < w' > }) newbindings
+                       × (Γ +++ toCtx newbindings) ⊢ₒ ↓ τ < w >)
+    liftCont : ∀ {Γ w} → ℕ
+             → Γ ⊢ₒ ⋆< w >
+             → ℕ × Σ (List (Id × Typeₒ × World))
+                      (λ newbindings → All (λ { (_ , σ , w') → [] ⊢ₒ ↓ σ < w' > }) newbindings
+                      × (Γ +++ toCtx newbindings) ⊢ₒ ⋆< w >)
+  \end{code}
+
+  Types of these two functions resemble |entryPoint|, except they have a
+  natural number in their arguments and outputs, and they account for the
+  context of the initial term. The number in the term is a simple hack to
+  generate new names for the lambda terms. It is increased by one for each
+  lambda and accumulated throughout the entire lifting process.
+
+  The most interesting case in these two function is how lambdas are handled.
+
+  \begin{code}
+    liftValue {Γ}{_}{w} n (`λ x ⦂ σ ⇒ t) with liftCont n t
+    ... | n' , xs , Δ , t' =
+      suc n'
+      , ("_lam" ++ show n' , ` σ cont , w) ∷ xs
+      , (`λ x ⦂ σ ⇒ t) ∷ Δ
+      , `v ("_lam" ++ show n') (++ʳ Γ (here refl))
+  \end{code}
 
   % }}}
 
   % Monomorphization {{{
-  \subsection{Monomorphization}
+  \subsection{Lifted Monomorphic}
+
+  Until this point, our definition of |Hyp| for every language contained two
+  constructors: one for a specific world, and valid values. However there is no
+  way to denote valid values in JavaScript, therefore we want to convert all
+  valid values to specific world references. We are defining a new language
+  that we will call |LiftedMonomorphic|.  The idea is to add one copy in client
+  and another one in server, for each valid value.  Our new |Hyp| definition is
+  as follows:
+  \begin{code}
+    data Hyp : Set where
+      _⦂_<_> : (x : Id) (τ : Type) (w : World) → Hyp
+  \end{code}
+
+  The |LiftedMonomorphic| languages is in most cases the same as the previous
+  language. The only exceptions are the two terms that contain valid values.
+  Since we do not have valid values we have to revise them.
+
+  \begin{code}
+    `put_`=_`in_ : ∀ {τ w} {m : τ mobile} → (u : Id)
+                 → Γ ⊢ ↓ τ < w >
+                 → ((u ⦂ τ < client >) ∷ (u ⦂ τ < server >) ∷ Γ) ⊢ ⋆< w >
+                 → Γ ⊢ ⋆< w >
+  \end{code}
+
+  The first of the terms to revise is putting a mobile term in a valid value.
+  Instead of adding a valid value of |u ∼ (λ → τ)| in the context, we put two
+  values in different worlds.
+
+  \begin{code}
+    `lets_`=_`in_ : ∀ {C w} → (u : Id)
+                  → Γ ⊢ ↓ (`⌘ C) < w >
+                  → ((u ⦂ C client < client >) ∷ (u ⦂ C server < server >) ∷ Γ) ⊢ ⋆< w >
+                  → Γ ⊢ ⋆< w >
+  \end{code}
+
+  Similarly for shamrock, we add two different values to the context instead of
+  a given valid value. However since |C| is a function |World → Type| we
+  actually have to call it with the corresponding world.
+
+  Also for each primitive that is a valid value, such as logging, we define two
+  primitives, one copy for client and another for server.
+
+  \subsubsection{Conversion to LiftedMonomorphic}
+
+  Even though defining the terms that are different in the |LiftedMonomorphic|
+  language shows most of the conversion process, we still need to state the
+  types of the conversion functions.  Similar to the previous conversions, we
+  will have a function to convert continuations and values. We will state their
+  types as follows:\footnote{We will use the suffix $_o$ for the types of the
+  closure language formalization, and $^m$ for the types of the
+  |LiftedMonomorphic| formalization.}
+
+  \begin{code}
+    convertValue : ∀ {Γ τ w}
+                → Γ ⊢ₒ ↓ τ < w >
+                → (convertCtx Γ) ⊢ᵐ ↓ convertType τ < w >
+    convertCont : ∀ {Γ w}
+                → Γ ⊢ₒ ⋆< w >
+                → (convertCtx Γ) ⊢ᵐ ⋆< w >
+  \end{code}
+
+  The types of these functions are similar to the ones we had before. For a
+  given value or continuation in the previous language, we get a value or
+  continuation of the corresponding type and context. What makes this process a
+  bit more interesting is that contexts are not in one to one correspondence
+  anymore, because we replace every valid value with two things. This means
+  |convertCtx| and proofs that show that a given variable is in the context
+  will have to change.
+
+  \begin{code}
+    convertCtx : Contextₒ → Contextᵐ
+    convertCtx [] = []
+    convertCtx ((x ⦂ τ < w >) ∷ xs) = (id , convertType τ , w) ∷ convertCtx xs
+    convertCtx ((u ∼ C) ∷ xs) = (u ⦂ convertType (C client) < client >) ∷ (u ⦂ convertType (C server) < server >) ∷ convertCtx xs
+  \end{code}
+
+  Since a converted context now can be longer than a given context, we have to
+  redefine |convert∈|, a function that takes a proof that a hypothesis is in
+  the context in the previous language and returns a proof that the converted
+  hypothesis is in the converted context in the new language.
+
+  \begin{code}
+  hypLocalize : Hypₒ → World → Hypᵐ
+  hypLocalize (x ⦂ τ < w >) w' = x ⦂ convertType τ < w >
+  hypLocalize (u ∼ C) w = u ⦂ convertType (C w) < w >
+
+  convert∈ : ∀ {ω} → (Γ : Contextₒ) → (h : Hypₒ) → h ∈ Γ → hypLocalize h ω ∈ convertCtx Γ
+  convert∈ _ (x ⦂ τ < w >) (here refl) = here refl
+  convert∈ {client} _ (u ∼ C) (here refl) = here refl
+  convert∈ {server} _ (u ∼ C) (here refl) = there (here refl)
+  convert∈ {ω} ((x ⦂ τ < w >) ∷ xs) h (there i) = there (convert∈ {ω} xs h i)
+  convert∈ {ω} ((u ∼ C) ∷ xs) h (there i) = there (there (convert∈ {ω} xs h i))
+  \end{code}
+
+  Using these functions, it becomes trivial to define the |`v| and |`vval|
+  cases of |convertValue|.
+
+  Now let's use all of our definitions and state the overall conversion
+  function for our entire program.
+  During lambda lifting, we gathered a list of closed terms, i.e.\ terms with
+  an empty context. What we are left with is a term that calls certain terms
+  from the list we gathered. Our goal with the overall function is to keep the
+  same structure, but all the types and terms will be in the new language.
+  \begin{code}
+  entryPoint : ∀ {w}
+             → Σ (List (Id × Typeₒ × World))
+                 (λ newbindings → All (λ { (_ , σ , w') → [] ⊢ₒ ↓ σ < w' > }) newbindings
+                 × (toCtxₒ newbindings) ⊢ₒ ⋆< w >)
+             → Σ (List (Id × Typeᵐ × World))
+                 (λ newbindings → All (λ { (_ , σ , w') → [] ⊢ᵐ ↓ σ < w' > }) newbindings
+                  × (toCtxᵐ newbindings) ⊢ᵐ ⋆< w >)
+  \end{code}
+  The actual function definition is trivial but verbose, it converts each term
+  separately and then shows that the contexts are still equal.
 
   % }}}
 
@@ -830,16 +1024,8 @@ Function calls take a function expression and a list of expressions, which are
 the arguments to the function.
 The list is in a special type called |All|
 that makes sure that each expression is of the type of the corresponding
-argument.\footnote{The type |All| is defined in Agda standard library, in
-|Data.List.All|.  Morally it has the same constructors as a list, but it
-takes a predicate of |P : A → Set| and a list |xs : List A|.  Each element in
-the list is mapped to a |Set| using the predicate, and a value of type |All P
-xs| is constructed by providing values of type |P x| for each |x| in |xs|.
-Let's see a simple example: the type |All (λ n → n ≡ n) (1 ∷ 2 ∷ 3 ∷ [])| can
-take a value |refl ∷ refl ∷ refl ∷ []|, note that the first |refl| is of type
-|1 ≡ 1|, and the second is of type |2 ≡ 2| and so on.  Also note that the
-constructors |[]| and |_∷_| are overloaded and they can be used for both lists
-and the type |All|.} % TODO already defined All
+argument.
+
 
 
 \begin{code}
