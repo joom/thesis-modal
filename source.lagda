@@ -11,16 +11,35 @@
 
   %include agda.fmt
   \usepackage{natbib, fullpage, textgreek, bussproofs, epigraph, color, float,
-              enumerate, url, xcolor, graphicx, hyperref}
+              enumerate, url, xcolor, graphicx, hyperref, listings}
   \hypersetup{pdftex, backref = true, colorlinks = true, allcolors = {blue}}
   \setcounter{tocdepth}{4}
   \setcounter{secnumdepth}{4}
+  \lstdefinelanguage{JavaScript}{
+    keywords={break, case, catch, continue, debugger, default, delete, do, else, finally, for, function, if, in, instanceof, new, return, switch, this, throw, try, typeof, var, void, while, with},
+    morecomment=[l]{//},
+    morecomment=[s]{/*}{*/},
+    morestring=[b]',
+    morestring=[b]",
+    sensitive=true
+  }
+  \lstset{
+    numbers=left,
+    numberstyle=\small,
+    language=JavaScript,
+    frame=single,
+    framexleftmargin=15pt,
+    basicstyle=\ttfamily,
+    columns=fullflexible,
+    keepspaces=true
+  }
+  \renewcommand{\hscodestyle}{\small}
   % }}}
 
   % Editorial commands {{{
   \newcommand{\Red}[1]{{\color{red} #1}}
   \newcommand{\nop}[0]{} % used to reconcile vim folds and latex curly braces
-  \newcommand{\ToDo}[1]{{\color{blue} ToDo: #1}}
+  \newcommand{\task}[1]{{\color{red} TASK: #1}}
   \newcommand{\tocite}[1]{{\color{red} [cite #1]}\xspace}
   %  }}}
 
@@ -37,9 +56,11 @@
   \DeclareUnicodeCharacter{738}{$^\text{s}$}
   \DeclareUnicodeCharacter{7503}{$^\text{k}$}
   \DeclareUnicodeCharacter{739}{$^\text{x}$}
+  \DeclareUnicodeCharacter{7504}{$^\text{m}$}
   \DeclareUnicodeCharacter{8709}{$\varnothing$} % overwriting \emptyset
   \DeclareUnicodeCharacter{8984}{$\shamrock$}
   \DeclareUnicodeCharacter{10626}{$\col$}
+  \DeclareUnicodeCharacter{65307}{$;$}
   % }}}
 
 % }}}
@@ -69,7 +90,7 @@
 
 \begin{abstract}
   Curry-Howard correspondence describes a language that corresponds to
-  propositional logic.  If modal logic is an extension of propositional logic,
+  propositional logic.  Since modal logic is an extension of propositional logic,
   then what language corresponds to modal logic? If there is one, then what is
   it good for?  Murphy's dissertation\cite{tom7} argues that a programming
   language designed based on modal type systems can provide elegant
@@ -211,7 +232,7 @@
 
     \begin{center}
       \AxiomC{$\Gamma \vdash \conc{A}{w}$}
-      \AxiomC{$\Gamma \vdash \conc{A}{w}$}
+      \AxiomC{$\Gamma \vdash \conc{B}{w}$}
       \RightLabel{$\land_i$} % and intro
       \BinaryInfC{$\Gamma \vdash \conc{A \land B}{w}$}
       \DisplayProof
@@ -240,9 +261,9 @@
     \end{center}\bigskip
 
     \begin{center}
-      \AxiomC{$\Gamma \vdash \conc{A \lor B}{w'}$}
-      \AxiomC{$\Gamma,\conc{A}{w'} \vdash \conc{C}{w}$}
-      \AxiomC{$\Gamma,\conc{B}{w'} \vdash \conc{C}{w}$}
+      \AxiomC{$\Gamma \vdash \conc{A \lor B}{w}$}
+      \AxiomC{$\Gamma,\conc{A}{w} \vdash \conc{C}{w}$}
+      \AxiomC{$\Gamma,\conc{B}{w} \vdash \conc{C}{w}$}
       \RightLabel{$\lor_e$} % or elim
       \TrinaryInfC{$\Gamma \vdash \conc{C}{w}$}
       \DisplayProof
@@ -268,6 +289,10 @@
   connectives. $\Box A$ means $A$ is true for all worlds, and $\Diamond A$
   means that $A$ is true for some world. The inference rules for $\Box$ and
   $\Diamond$ are in \autoref{fig:is5cupBoxDiamond}.
+
+  % todo box definition doesn't fit kripke semantics:
+  % box means A holds for all worlds accessible from the  current one
+  % "forall" only holds bc we're using IS5
   Notice that we are using $w$ and $w'$ for concrete world variables, while
   $\omega$ stands for a world that is universally quantified.
 
@@ -338,15 +363,42 @@
 
   % }}}
 
+  % Validity {{{
+  \subsubsection{Validity}
+
+  % todo validity judgment
+  % todo shamrock
+
+  % }}}
+
   % Mobility {{{
   \subsection{Lambda 5 and Mobility}
 
+  We stated the rules of modal logic in the previous section, and now we want
+  to convert each rule to a proof term, and hence define a language that we
+  will call Lambda 5. \footnote{I should note that our Lambda 5 definition is
+  different from the one defined in \cite{tom7}. Our definition includes
+  $\forall$ and $\exists$ for worlds, while \cite{tom7} uses $\Box$ and
+  $\Diamond$ instead. Since this thesis is more about the compilation process
+  than logic itself, I chose to fast-forward to quantifiers.}
+  The relationship between modal logic rules and proof
+  terms in Lambda 5 should resemble how propositional logic and simply typed
+  lambda calculus are related in Curry-Howard correspondence.  In simpler
+  words, modal propositions will be types in Lambda 5, and proof trees will be
+  Lambda 5 expressions. \autoref{fig:l5term} shows the proof terms of Lambda 5.
+
+  \begin{figure}[ht]
+    \caption{Proof terms of Lambda 5}
+    \label{fig:l5term}
+    \begin{center}
+    \end{center}\bigskip
+  \end{figure}
 
   If we go back to the prison analogy, it is clear that the rules in
   \autoref{fig:is5cup} are not enough to provide communication between
   different worlds. However we have to think about what kinds of proofs Alice
   can pass onto Bob on a paper. Given that Alice has a window in her cell and
-  Bob does not, can Alice teach Bob how to look up the weather by himself?
+  Bob does not, can Alice instruct Bob how to look up the weather by himself?
   The answer is no, whatever Alice writes down, Bob will always have to ask
   someone else. So we discover that communication between cells are restricted
   by nature, because they can only pass notes on a paper, and they are confined
@@ -373,7 +425,7 @@
       \DisplayProof
       \hskip 1.5em
       \AxiomC{}
-      \RightLabel{$\shamrock_m$} % at mobile
+      \RightLabel{$\shamrock_m$} % shamrock mobile
       \UnaryInfC{$\shamrock A$\ mobile}
       \DisplayProof
     \end{center}\bigskip
@@ -419,7 +471,6 @@
 
   % }}}
 
-
 % }}}
 
 % Type-directed translation {{{
@@ -428,10 +479,40 @@
 
   % MinML5 {{{
   \subsection{MinML5}
-  In the previous section we presented a propositional modal logic, and the
-  next step is to define the proof terms that correspond to the logic we
-  defined.
+  In the previous section we presented a propositional modal logic and the
+  proof terms that correspond to that logic. In this section, our goal is to
+  formalize this language and the compilation process to JavaScript.
 
+  First, we should define each type in our initial language:
+
+  \begin{code}
+    data Type : Set where
+      `Int `Bool `Unit `String : Type
+      `_⇒_ `_×_ `_⊎_ : Type → Type → Type
+      `_at_ : Type → World → Type
+      `⌘ : (World → Type) → Type
+      `∀ `∃ : (World → Type) → Type
+  \end{code}
+
+  Then we have to define the building block judgments that we will use in the
+  ``$... \vdash ...$'' kind of judgment. We should start with what can come
+  before the $\vdash$. We will call this small judgment a hypothesis.
+  % todo reference to validity section
+
+  \begin{code}
+    data Hyp : Set where
+      _⦂_<_> : (x : Id) (τ : Type) (w : World) → Hyp
+      _∼_ : (u : Id) → (World → Type) → Hyp
+  \end{code}
+
+  We should start with what comes after the $\vdash$. We will call this
+  small judgment a conclusion.
+
+  \begin{code}
+    data Conc : Set where
+      _<_> : (τ : Type) (w : World) → Conc
+      ↓_<_> : (τ : Type) (w : World) → Conc
+  \end{code}
   % }}}
 
   % CPS {{{
@@ -462,12 +543,382 @@
 
 \section{Formalization of JavaScript}
 
+The last step of our compiler is code generation, and it is not practical to
+generate target code directly as a concatenation of strings. The common
+practice is to have an abstraction of the target language, and then generate
+the code using that abstraction.
+
+However to ensure that we are compiling to a language that executes without
+exception; we will formalize a subset of JavaScript that enforces certain type and
+context restrictions. A simply typed JavaScript, if you will. % TODO
+
+JavaScript is an imperative language that distinguishes between statements and
+expressions. We want to reflect the difference between these two. However, it
+is considered a good practice to avoid declaring or defining a variable in the
+global namespace. The most common way to do so in JavaScript is to define
+everything in an anonymous function (i.e.\ lambda) that is instantly called.
+
+\begin{lstlisting}[caption={An anonymous function that is instantly called.},label=jsAnon]
+(function() {
+  // definitions etc.
+})();
+\end{lstlisting}
+
+Since JavaScript has function scope, any declaration made with \lstinline{var}
+will stay in the scope of the anonymous function and will not be accessible
+from outside.
+
+However, notice that the code above has an expression statement, which is a
+kind of statement that evaluates an expression and ends. \lstinline{3;} is an
+example of it that evaluates a number expression.  A function call is just
+another kind of expression, which makes \lstinline{console.log("hello");}
+another example of such statements.
+
+Notice that this statement does not add any new declarations to the global
+namespace.  We want to disallow declarations to the global namespace, so
+variable declarations should not be accessible if it is not in a function
+definition. Therefore, we will define two different types, namely statements
+and function statements.
+
+Let's start by defining the types that will be used in our JavaScript formalization:
+
+\begin{code}
+data Type : Set where
+  `Undefined `Bool `Number `String : Type
+  `Function : List Type → Type → Type
+  `Object : List (Id × Type) → Type
+  `Σt[t×[_×t]cont] : Type → Type
+\end{code}
+
+This definition tells us that our base types are |`Undefined|, |`Bool|,
+|`Number| and |`String|.  The function type takes the list of types to denote
+the arguments and a return type.  The object type takes a list of all key names
+and the types of data each key holds.\footnote{Remember that JavaScript objects
+are like Python dictionaries.} The last one is a hacky solution to the hard
+coded existential pair we saw in the previous languages.  In reality it is a
+JavaScript object that does not obey the typing rules we want for objects,
+therefore we added a separate type to deal with it.
+
+We have the notions of hypothesis and conclusion as we defined in the previous languages.
+
+\begin{code}
+data Hyp : Set where
+  _⦂_<_> : (x : Id) (τ : Type) (w : World) → Hyp
+
+Context = List Hyp
+
+data Conc : Set where
+  _<_> : (τ : Type) (w : World) → Conc
+\end{code}
+
+Now we will define three types: statements, function statements and
+expressions. Since they are defined mutually recursively, let's go over their
+notation first in order to understand the big picture.
+
+We will first define |Stm_<_> : Context → World → Set|,
+and |Stm Γ < w >| should read ``the statement under the context |Γ| in the
+world |w|''.
+
+We will then define |FnStm_⇓_⦂_<_> : Context → Context → Maybe Type → World → Set|,
+and |FnStm Γ ⇓ γ ⦂ mσ < w >| should read ``the function statement under the
+context |Γ| that extends the context with |γ| and has returned the
+function with type |mσ|, in the world |w|''.
+
+Our last definition will be |_⊢_ (Γ : Context) : Conc → Set|,
+and |Γ ⊢ τ < w >| should read ``the expression under the context |Γ|, of
+the type |τ|, in the world |w|''.
+
+Now we can move on to the actual definitions of these notions.
+
+% Statements {{{
+\subsection{Statements}
+
+We explained above that defining things in the global namespace is considered
+bad practice, and therefore we planned to place all of the code in an anonymous
+function that will be called instantly. Therefore, we only need one kind of
+statement that can hold the function call.
+By definition, we ruled out the possibility of changing the global namespace,
+therefore we are not accounting for the context after the
+statement.\footnote{Note that this does not mean purity. The function calls we
+can make can still have side effects.}
+
+\begin{code}
+data Stm_<_> : Context → World → Set where
+  `exp : ∀ {Γ τ w} → Γ ⊢ τ < w > → Stm Γ < w >
+\end{code}
+% }}}
+
+% Function Statements {{{
+\subsection{Function Statements}
+
+Now let's define rules for statements that are allowed in function definitions.
+
+\begin{code}
+data FnStm_⇓_⦂_<_> : Context → Context → Maybe Type → World → Set where
+  `nop : ∀ {Γ w mσ} → FnStm Γ ⇓ [] ⦂ mσ < w >
+  `exp : ∀ {Γ τ w mσ} → Γ ⊢ τ < w > → FnStm Γ ⇓ [] ⦂ mσ < w >
+\end{code}
+
+We define a no operation statement for the cases that we do not want to output any real JavaScript statement. Obviously it does not change the context or affect the return value in any way.
+
+Our next definition is the expression statement that we explained earlier. It does not change the local context or the return value in the function.
+
+\begin{code}
+  `var : ∀ {Γ τ w mσ} → (id : Id) → (t : Γ ⊢ τ < w >) → FnStm Γ ⇓ (id ⦂ τ < w > ∷ []) ⦂ mσ < w >
+\end{code}
+
+Variable declaration is the first kind of statement that can change the
+context; it will add a single element to the context.
+
+\begin{code}
+  _；_ : ∀ {Γ γ γ' w mσ}
+       → FnStm Γ ⇓ γ ⦂ mσ < w >
+       → FnStm (γ ++ Γ) ⇓ γ' ⦂ mσ < w >
+       → FnStm Γ ⇓ (γ' ++ γ) ⦂ mσ < w >
+\end{code}
+
+We are now defining what we can call a combination statement. Since we
+determined |FnStm| to be a single entity and not a list of statements, we need
+a statement that can hold two different statements.\footnote{Semicolon cannot
+be used in names in Agda, so we used the Unicode character U+FF1B, which looks
+almost the same.} The context changes in this definition is important in order
+to understand our formalization.
+
+Since we have a variable declaration |FnStm|, we know that a given |FnStm| can
+possibly change the context, which means we have to take |γ| into account.
+Then for the second statement, the initial context will be the resulting
+context of the first statement, which is |γ ++ Γ|. Overall, the |FnStm|
+resulting from the combination of two smaller ones will have the initial
+context |Γ| and will add |γ' ++ γ| to the local context.
+
+\begin{code}
+_；return_ : ∀ {Γ γ τ w}
+            → FnStm Γ ⇓ γ ⦂ nothing < w >
+            → (γ ++ Γ) ⊢ τ < w >
+            → FnStm Γ ⇓ γ ⦂ (just τ) < w >
+\end{code}
+
+We define a similar statement to return the function we are in. Note that no
+other function statement allows a change in the |Maybe Type|\footnote{Remember
+that |Maybe| in Agda (and Haskell) is the same as \lstinline{option} type in ML
+variants.} argument of the |FnStm|. In the beginning, that argument will start
+as |nothing|, because the function has not yet been returned. It can only
+change to |just τ| through this return statement we are defining. Therefore
+having |just τ| guarantees that the function has a return statement. Moreover,
+the structure of this statement encourages us to use it only at the very end of
+the |FnStm|.\footnote{It is possible to create a |FnStm| such as
+|(`nop ；return `undefined) ； `exp `undefined|, but notice that the second half of
+the combination statement will not be executed in reality since the function
+will return beforehand.}
+
+Later we will define all functions in a way that the |FnStm| they take as an
+argument must have a return statement.
+
+\begin{code}
+  `if_`then_`else_ : ∀ {Γ γ γ' w mσ}
+                   → Γ ⊢ `Bool < w >
+                   → FnStm Γ ⇓ γ ⦂ mσ < w >
+                   → FnStm Γ ⇓ γ' ⦂ mσ < w >
+                   → FnStm Γ ⇓ γ ∩ γ' ⦂ mσ < w >
+\end{code}
+
+JavaScript provides two different kinds of conditionals, ternary expression and
+classic imperative if/else. We are choosing to use the latter, and to define
+|`if_`then_`else_| as a |FnStm| that takes other function statements.
+
+However two different branches in an if/else block may define different
+variables and hence end up with different resulting contexts.  A possible
+solution to that is to force the two branches to have exactly the same
+resulting contexts, which would turn out to be impractical later in the
+conversion from our last language to JavaScript. A simpler option is to have
+two different contexts and get their intersection, which means even if two
+branches define different variables, we will later only have access to the ones
+defined in both.
+
+\begin{code}
+  `prim : ∀ {Γ h mσ w} → (x : Prim h) → FnStm Γ ⇓ (h ∷ []) ⦂ mσ < w >
+\end{code}
+
+The last |FnStm| we will define is the primitive. Primitives work like they do
+in the previous languages, it adds a reference or definition of the primitive
+to the local context. The definition of |Prim : Hyp → Set| contains the
+corresponding terms for the previous primitives such as |`alert|, |`readFile|,
+|`log| etc. In addition, we have two more primitives, socket references for the
+client and server. We will go in detail about them in the section of conversion
+to JS. % TODO reference
+
+% }}}
+
+% Expressions {{{
+\subsection{Expressions}
+
+Now let's define the notion of expressions, starting with the simple ones.
+
+\begin{code}
+data _⊢_ (Γ : Context) : Conc → Set where
+  `string : ∀ {w} → String → Γ ⊢ `String < w >
+  `true  : ∀ {w} → Γ ⊢ `Bool < w >
+  `false : ∀ {w} → Γ ⊢ `Bool < w >
+  `_∧_ : ∀ {w} → Γ ⊢ `Bool < w > → Γ ⊢ `Bool < w > → Γ ⊢ `Bool < w >
+  `_∨_ : ∀ {w} → Γ ⊢ `Bool < w > → Γ ⊢ `Bool < w > → Γ ⊢ `Bool < w >
+  `¬_  : ∀ {w} → Γ ⊢ `Bool < w > → Γ ⊢ `Bool < w >
+  `_===_ : ∀ {τ w} {eq : EqType τ} → Γ ⊢ τ < w > → Γ ⊢ τ < w > → Γ ⊢ `Bool < w >
+  `n_  : ∀ {w} → (ℤ ⊎ Float) → Γ ⊢ `Number < w >
+  `_≤_ : ∀ {w} → Γ ⊢ `Number < w > → Γ ⊢ `Number < w > → Γ ⊢ `Bool < w >
+  `_+_ : ∀ {w} → Γ ⊢ `Number < w > → Γ ⊢ `Number < w > → Γ ⊢ `Number < w >
+  `_*_ : ∀ {w} → Γ ⊢ `Number < w > → Γ ⊢ `Number < w > → Γ ⊢ `Number < w >
+\end{code}
+
+We have string, boolean and number literals, and simple logical, numerical, and
+comparison operations defined on them.  Note that JavaScript does not
+differentiate between integers and floating numbers, so we only have one type
+|`Number|, whose literal term accepts both |ℤ| and |Float|. \footnote{Remember
+that |⊎| is the discriminated union type in Agda standard library, just like
+\lstinline{Either} in Haskell.}
+
+The equals operator |_===_| is more interesting than the other ones. We want to
+allow only certain types of values to be compared for equality. Functions and
+objects do not work properly with the \lstinline{===} operator in JavaScript,
+so we will only use the base types. It suffices to say that |EqType : Type → Set|
+similar to the |_mobile| we defined in the previous languages, we will skip the
+definition and continue JavaScript expressions.
+
+\begin{code}
+  `undefined : ∀ {w} → Γ ⊢ `Undefined < w >
+\end{code}
+
+In JavaScript, the value \lstinline{undefined} has the type
+\lstinline{undefined}. This creates a type inconsistency, because when we
+declare a new variable in JavaScript without initiating it with a value, its
+initial value and type are \lstinline{undefined}. Then when we assign it a
+value, the type of the variable changes. This sort of behavior should not be
+allowed in our formalization.
+
+However having an undefined type and value is still useful for other purposes.
+If a function is not supposed to return anything, we can use |`Undefined| as
+its return type, and return the term |`undefined|, defined above, for
+formality.
+
+\begin{code}
+  `v : ∀ {τ w} → (x : Id) → (x ⦂ τ < w >) ∈ Γ → Γ ⊢ τ < w >
+\end{code}
+
+We define an expression to refer to variables that are in the context.
+
+\begin{code}
+  `λ_⇒_ : ∀ {argTypes τ w Γ'} → (ids : List Id)
+        → FnStm ((zipWith (_⦂_< w >) ids argTypes) ++ Γ) ⇓ Γ' ⦂ (just τ) < w >
+        → Γ ⊢ `Function argTypes τ < w >
+  `_·_ : ∀ {argTypes τ w} → Γ ⊢ (`Function argTypes τ) < w >
+       → All (λ σ → Γ ⊢ σ < w >) argTypes
+       → Γ ⊢ τ < w >
+\end{code}
+
+Even though JavaScript is an imperative language, it supports anonymous
+(lambda) functions. However anonymous functions take statements, not
+expressions.\footnote{It is worth noting that ECMAScript 6, an update to
+JavaScript, introduces "arrow functions" that can take expressions.}
+
+Our lambda expression first takes a list of variable names that will be added
+to the context with the corresponding types we get from |`Function argTypes τ|,
+which tells us that |argTypes| is the list of types of the arguments, and |τ|
+is the return type of the function. Notice that the statements in the lambda
+are allowed to change the local context inside, but the lambda must have a
+return statement inside that returns a value of type |τ|.
+
+Function calls take a function expression and a list of expressions, which are
+the arguments to the function.
+The list is in a special type called |All|
+that makes sure that each expression is of the type of the corresponding
+argument.\footnote{The type |All| is defined in Agda standard library, in
+|Data.List.All|.  Morally it has the same constructors as a list, but it
+takes a predicate of |P : A → Set| and a list |xs : List A|.  Each element in
+the list is mapped to a |Set| using the predicate, and a value of type |All P
+xs| is constructed by providing values of type |P x| for each |x| in |xs|.
+Let's see a simple example: the type |All (λ n → n ≡ n) (1 ∷ 2 ∷ 3 ∷ [])| can
+take a value |refl ∷ refl ∷ refl ∷ []|, note that the first |refl| is of type
+|1 ≡ 1|, and the second is of type |2 ≡ 2| and so on.  Also note that the
+constructors |[]| and |_∷_| are overloaded and they can be used for both lists
+and the type |All|.} % TODO already defined All
+
+
+\begin{code}
+`obj : ∀ {w} → (terms : List (Id × Σ Type (λ τ → Γ ⊢ τ < w >)))
+      → Γ ⊢ `Object (toTypePairs terms) < w >
+`proj : ∀ {keys τ w} → (o : Γ ⊢ `Object keys < w >)
+      → (key : Id) → (key , τ) ∈ keys
+      → Γ ⊢ τ < w >
+\end{code}
+
+Now we define object literals. The type restriction of objects are functions
+are similar in our formalization, however this time we will not use the type
+|All|, because we already have a definition of |∈| for lists and we want to
+make use of that.  We defined our JavaScript type constructor |`Object| to take
+|List (Id × Type)|, i.e.\ pairs of key names and JavaScript types of the values
+they will hold.
+
+The function |toTypePairs| maps triples |(id , τ , t)| to |(id , τ)|. When it
+is applied to the first argument of the constructor |`obj|, it should give us the
+pair list that is necessary for the resulting type of the JavaScript object we
+are creating.
+
+The next definition we are making is projection on objects, i.e.\ property
+access. If we have an object expression and a key that is included in the type
+of the object, then we can access the key.
+
+
+\begin{code}
+`packΣ : ∀ {σ w} → (τ : Type)
+      → Γ ⊢ `Object (("type" , `String) ∷ ("fst" , τ) ∷
+                     ("snd" , `Function (`Object (("type" , `String) ∷ ("fst" , σ) ∷ ("snd" , τ) ∷ []) ∷ []) `Undefined) ∷ []) < w >
+      → Γ ⊢ `Σt[t×[ σ ×t]cont] < w >
+`proj₁Σ : ∀ {τ σ w} → Γ ⊢ `Σt[t×[ σ ×t]cont] < w > → Γ ⊢ τ < w >
+`proj₂Σ : ∀ {τ σ w} → Γ ⊢ `Σt[t×[ σ ×t]cont] < w >
+        → Γ ⊢ `Function (`Object (("type" , `String) ∷ ("fst" , σ) ∷ ("snd" , τ) ∷ []) ∷ []) `Undefined < w >
+\end{code}
+
+We also define the JavaScript type |`Σt[t×[ σ ×t]cont]| to be constructed using an object with two fields, the first constructed by the type in the existential quantifier, the second is a function that also uses the same type inside.
+
+
+\begin{code}
+`serialize : ∀ {τ w}{m : τ mobile} → Γ ⊢ τ < w > → Γ ⊢ `String < w >
+`deserialize : ∀ {τ w}{m : τ mobile} → Γ ⊢ `String < w > → Γ ⊢ τ < w >
+\end{code}
+
+We also need to have restricted serialization and deserialization for our
+JavaScript expressions. In reality, we will call \lstinline{JSON.stringify} for
+|`serialize| and \lstinline{JSON.parse} for |`deserialize|.
+Remember that we defined a notion of mobility in our previous languages. We
+will define a similar one for JavaScript terms.
+
+\begin{code}
+data _mobile : Type → Set where
+  `Boolᵐ : `Bool mobile
+  `Numberᵐ : `Number mobile
+  `Stringᵐ : `String mobile
+  `Objectᵐ : ∀ {pairs} → All (λ { ( _ , τ ) → τ mobile }) pairs → (`Object pairs) mobile
+\end{code}
+
+Mobility of |`Bool|, |`Number| and |`String| does not need explanation.
+Mobility of |`Object|, however, requires all values held in the object to be
+mobile as well, using the |All| type we defined earlier. The anomaly in here is
+the lack of |`Undefined|, and the reason is that \lstinline{JSON.stringify}
+ignores the keys that hold the value \lstinline{undefined}.\footnote{For
+example \lstinline{JSON.stringify(\{"a": undefined\})} returns
+\lstinline{\{\}}.}
+
+
+% }}}
 
 % }}}
 
 % Conversion to JavaScript {{{
 
 \section{Conversion to JavaScript}
+
+The $\lambda$-lifted monomorphic language gives us a list of lambda terms and a
+term standing by itself that refers to those lambda terms.
+
 
 
 % }}}
