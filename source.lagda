@@ -6,12 +6,12 @@
 
   % Imports and Styling {{{
   \RequirePackage{amsmath}
-  \documentclass[11pt]{westhesis} % add "final" flag when finished
+  \documentclass[11pt,draft]{westhesis} % add "final" flag when finished
   \def\textmu{}
 
   %include agda.fmt
   \usepackage{natbib, fullpage, textgreek, bussproofs, epigraph, color, float,
-              enumerate, url, xcolor, graphicx, hyperref, listings}
+              enumerate, url, xcolor, graphicx, hyperref, listings, xfrac}
   \hypersetup{pdftex, backref = true, colorlinks = true, allcolors = {blue}}
   \setcounter{tocdepth}{4}
   \setcounter{secnumdepth}{4}
@@ -44,6 +44,7 @@
   %  }}}
 
   % Math and code commands {{{
+  \renewcommand{\paragraph}[1]{\bigskip\textbf{#1}}
   \newcommand{\figrule}{\begin{center}\hrule\end{center}}
   \newcommand{\set}[1]{\left\{#1\right\}}
   \DeclareRobustCommand{\shamrock}{\raisebox{-.035em}{\includegraphics[width=.75em, height=.75em]{symbols/command}}\nop}
@@ -58,6 +59,8 @@
   \DeclareUnicodeCharacter{739}{$^\text{x}$}
   \DeclareUnicodeCharacter{7504}{$^\text{m}$}
   \DeclareUnicodeCharacter{8338}{$_\text{o}$}
+  \DeclareUnicodeCharacter{8339}{$_\text{x}$}
+  \DeclareUnicodeCharacter{11388}{$_\text{j}$}
   \DeclareUnicodeCharacter{8709}{$\varnothing$} % overwriting \emptyset
   \DeclareUnicodeCharacter{8984}{$\shamrock$}
   \DeclareUnicodeCharacter{10626}{$\col$}
@@ -74,9 +77,12 @@
 \department{Mathematics and Computer Science}
 \submitdate{April 2017}
 \copyrightyear{2017}
+\pagestyle{chapsec}
 
 \makeindex
 \begin{document}
+
+\newcommand{\isc}{IS$5^\cup$}
 
 \begin{dedication}
 \epigraph{``Forgotten were the elementary rules of logic, that extraordinary
@@ -102,6 +108,7 @@
   called MinML5 in Agda and then wrote a compiler to JavaScript for it. The
   compiler is a series of type directed translations through fully formalized
   languages, the last one of which is a very limited subset of JavaScript.
+  As opposed to Murphy's compiler
 \end{abstract}
 
 \frontmatter
@@ -119,6 +126,11 @@
 
 % Introduction {{{
 \section{Introduction}
+
+% what is accomplished
+% general sense of how much code there is
+  % section by section
+
 
 % }}}
 
@@ -168,6 +180,7 @@
 
   % Modal Logic {{{
   \subsection{Modal logic}
+  \label{ssec:modal}
 
   Modal logic is a broad field that includes various kinds of logic that deal
   with relational structures that have different perspectives of truth.
@@ -178,7 +191,7 @@
   possibly different set of truths. It is possible for a proposition to be true
   in one world and false in another.
 
-  To illustrate the concept, let's think of a prison that have cells, and each
+  To illustrate the concept, let's think of a prison that has cells, and each
   correspond to a world in our modal logic.
   Suppose in each cell, there is a person who is locked inside.
   Alice is in a cell with a window, while Bob is in a windowless one.
@@ -192,7 +205,7 @@
   cell that is true. We should say ``$A$ is true in Alice's world'',
   for which we will use the notation ``\conc{$A$}{w}''.
 
-  Alice, Bob and others in different cells, have a warden, whose name is Walter.
+  Alice, Bob and others in different cells have a warden, whose name is Walter.
   Walter provides communication among everyone. Alice can take a photo of
   outside and send it in an envelope to Bob through Walter. Now Bob also has a
   proof that it is sunny, and he can use it later.
@@ -208,15 +221,15 @@
   \textbf{IS5}.\cite{lecture15-pf}
   For our purposes we will deal with the case that $R$ is a full relation
   $R = W \times W$, in other words every world will be accessible from any
-  other.  We call this relation \textbf{IS$5^\cup$}.\cite{tom7}
+  other.  We call this relation \textbf{\isc}.\cite{tom7}
 
   In \autoref{fig:is5cup}, we state the axioms and inference rules of
-  IS$5^\cup$ for the connectives that are familiar from non-modal propositional
+  \isc\ for the connectives that are familiar from non-modal propositional
   logic, namely $\top, \bot, \land, \lor$ and $\supset$ (reads ``implies'',
   $\Rightarrow$ is another notation for it).
 
   \begin{figure}[ht]
-    \caption{Axioms and inference rules of IS$5^\cup$.}
+    \caption{Axioms and inference rules of \isc.}
     \label{fig:is5cup}
     \begin{center}
       \AxiomC{}
@@ -288,17 +301,17 @@
   different worlds, these connectives do not suffice. Therefore we introduce
   the $\Box$ (reads ``box'') and $\Diamond$ (reads ``diamond'') as new modal
   connectives. $\Box A$ means $A$ is true for all worlds, and $\Diamond A$
-  means that $A$ is true for some world. The inference rules for $\Box$ and
+  means that $A$ is true for some world.\footnote{Technically $\Box$ and
+  $\Diamond$ should say ``all worlds accessible from the current one'', but
+  since we are using \isc\ and all worlds are accessible from each other, we can
+  directly say ``all worlds''.} The inference rules for $\Box$ and
   $\Diamond$ are in \autoref{fig:is5cupBoxDiamond}.
 
-  % todo box definition doesn't fit kripke semantics:
-  % box means A holds for all worlds accessible from the  current one
-  % "forall" only holds bc we're using IS5
   Notice that we are using $w$ and $w'$ for concrete world variables, while
   $\omega$ stands for a world that is universally quantified.
 
   \begin{figure}[ht]
-    \caption{Inference rules for $\Box$ and $\Diamond$ in IS$5^\cup$}
+    \caption{Inference rules for $\Box$ and $\Diamond$ in \isc}
     \label{fig:is5cupBoxDiamond}
     \begin{center}
       \AxiomC{$\Gamma, \omega \text{ world} \vdash \conc{A}{$\omega$}$}
@@ -329,6 +342,7 @@
 
   % Hybrid logic {{{
   \subsubsection{Hybrid Logic and Quantifiers}
+  \label{sssec:hybrid}
 
   Even though $\Box$ and $\Diamond$ are introduced as modal connectives,
   they are not as expressive as we like. Moreover, for any person who
@@ -351,49 +365,177 @@
   % todo tethering
 
   \begin{figure}[ht]
-    \caption{Inference rules of hybrid connectives for IS$5^\cup$}
+    \caption{Inference rules of hybrid connectives for \isc}
     \label{fig:is5hybrid}
     \begin{center}
       \AxiomC{$\Gamma \vdash N : \conc{A}{w'}$}
       \RightLabel{$\texttt{at}_i$} % at intro
       \UnaryInfC{$\Gamma \vdash \conc{A\ \texttt{at}\ \text{w'}}{w}$}
       \DisplayProof
-      % \hskip 1.5em
+      \hskip 1.5em
+      \AxiomC{$\Gamma \vdash \conc{A\ \texttt{at}\ \text{w''}}{w'}$}
+      \AxiomC{$\Gamma, \conc{A}{w''} \vdash \conc{C}{w'}$}
+      \RightLabel{$\texttt{at}_i$} % at elim
+      \BinaryInfC{$\Gamma \vdash \conc{C}{w}$}
+      \DisplayProof
+    \end{center}\bigskip
+    \begin{center}
+      \AxiomC{$\Gamma, \omega \text{ world} \vdash \conc{A}{$\omega$}$}
+      \RightLabel{$\forall_i$} % forall intro
+      \UnaryInfC{$\Gamma \vdash \conc{\forall \omega . A}{w}$}
+      \DisplayProof
+      \hskip 1.5em
+      \AxiomC{$\Gamma \vdash \conc{\forall \omega . A}{w}$}
+      \RightLabel{$\forall_e$} % forall elim
+      \UnaryInfC{$\Gamma \vdash \conc{[\sfrac{w'}{\omega}]A}{w}$}
+      \DisplayProof
+    \end{center}\bigskip
+    \begin{center}
+      \AxiomC{$\Gamma \vdash \conc{A}{w'}$}
+      \RightLabel{$\exists_i$} % exists intro
+      \UnaryInfC{$\Gamma \vdash \conc{\exists \omega . A}{w}$}
+      \DisplayProof
+      \hskip 1.5em
+      \AxiomC{$\Gamma \vdash \conc{\exists \omega . A}{w'}$}
+      \AxiomC{$\Gamma, \omega \text{ world}, \conc{A}{$\omega$} \vdash \conc{C}{w}$}
+      \AxiomC{$\omega \not\in FV(C)$}
+      \RightLabel{$\exists_e$} % exists elim
+      \TrinaryInfC{$\Gamma \vdash \conc{C}{w}$}
+      \DisplayProof
     \end{center}
   \end{figure}
 
   % }}}
 
-  % Validity {{{
-  \subsubsection{Validity}
+  % Lambda 5 {{{
+  \subsection{Lambda 5}
 
-  % todo validity judgment
-  % todo shamrock
-
-  % }}}
-
-  % Mobility {{{
-  \subsection{Lambda 5 and Mobility}
-
+  % L5 intro {{{
   We stated the rules of modal logic in the previous section, and now we want
   to convert each rule to a proof term, and hence define a language that we
-  will call Lambda 5. \footnote{I should note that our Lambda 5 definition is
+  will call Lambda 5. \footnote{We should note that our Lambda 5 definition is
   different from the one defined in \cite{tom7}. Our definition includes
   $\forall$ and $\exists$ for worlds, while \cite{tom7} uses $\Box$ and
   $\Diamond$ instead. Since this thesis is more about the compilation process
-  than logic itself, I chose to fast-forward to quantifiers.}
+  than logic itself, we choose to fast-forward to quantifiers.}
   The relationship between modal logic rules and proof
   terms in Lambda 5 should resemble how propositional logic and simply typed
   lambda calculus are related in Curry-Howard correspondence.  In simpler
   words, modal propositions will be types in Lambda 5, and proof trees will be
-  Lambda 5 expressions. \autoref{fig:l5term} shows the proof terms of Lambda 5.
+  Lambda 5 expressions. \autoref{fig:l5term} shows the proof terms of Lambda
+  5.\cite{tom7}\cite{monadic}
 
   \begin{figure}[ht]
     \caption{Proof terms of Lambda 5}
     \label{fig:l5term}
     \begin{center}
+      \AxiomC{}
+      \RightLabel{hyp} % variable
+      \UnaryInfC{$\Gamma,\conc{x : A}{w} \vdash \conc{|v|\ x : A}{w}$}
+      \DisplayProof
+      \hskip 1.5em
+      \AxiomC{}
+      \RightLabel{$\top$} % top
+      \UnaryInfC{$\Gamma \vdash \conc{|tt| : \top}{w}$}
+      \DisplayProof
+      \hskip 1.5em
     \end{center}\bigskip
+
+    \begin{center}
+      \AxiomC{$\Gamma \vdash \conc{M : A}{w}$}
+      \AxiomC{$\Gamma \vdash \conc{N : B}{w}$}
+      \RightLabel{$\land_i$} % and intro
+      \BinaryInfC{$\Gamma \vdash \conc{|(|M| , |N|)| : A \land B}{w}$}
+      \DisplayProof
+    \end{center}\bigskip
+    \begin{center}
+      \AxiomC{$\Gamma \vdash \conc{M : A \land B}{w}$}
+      \RightLabel{$\land_{e_1}$} % and elim 1
+      \UnaryInfC{$\Gamma \vdash \conc{|fst|\ M : A}{w} $}
+      \DisplayProof
+      \hskip 1.5em
+      \AxiomC{$\Gamma \vdash \conc{M : A \land B}{w}$}
+      \RightLabel{$\land_{e_2}$} % and elim 2
+      \UnaryInfC{$\Gamma \vdash \conc{|snd|\ M : B}{w} $}
+      \DisplayProof
+    \end{center}\bigskip
+
+    \begin{center}
+      \AxiomC{$\Gamma \vdash \conc{M : A}{w}$}
+      \RightLabel{$\lor_{i_1}$} % or intro 1
+      \UnaryInfC{$\Gamma \vdash \conc{|inl|\ M : A \lor B}{w}$}
+      \DisplayProof
+      \hskip 1.5em
+      \AxiomC{$\Gamma \vdash \conc{M : B}{w}$}
+      \RightLabel{$\lor_{i_2}$} % or intro 2
+      \UnaryInfC{$\Gamma \vdash \conc{|inr|\ M : A \lor B}{w}$}
+      \DisplayProof
+    \end{center}\bigskip
+
+    \begin{center}
+      \AxiomC{$\Gamma \vdash \conc{M : A \lor B}{w}$}
+      \AxiomC{$\Gamma,\conc{x : A}{w} \vdash \conc{N_1 : C}{w}$}
+      \AxiomC{$\Gamma,\conc{y : B}{w} \vdash \conc{N_2 : C}{w}$}
+      \RightLabel{$\lor_e$} % or elim
+      \TrinaryInfC{$\Gamma \vdash \conc{|case|\  M\ |of inl|\ x\ |⇒ |N_1\ |inr|\ y\ |⇒ |N_2 : C}{w}$}
+      \DisplayProof
+    \end{center}\bigskip
+
+    \begin{center}
+      \AxiomC{$\Gamma, \conc{x : A}{w} \vdash \conc{M : B}{w}$}
+      \RightLabel{$\supset_i$} % implies intro
+      \UnaryInfC{$\Gamma \vdash \conc{|λ |x . M\ : A \supset B}{w}$}
+      \DisplayProof
+      \hskip 1.5em
+      \AxiomC{$\Gamma \vdash \conc{M : A \supset B}{w}$}
+      \AxiomC{$\Gamma \vdash \conc{N : A}{w}$}
+      \RightLabel{$\supset_e$} % implies elim
+      \BinaryInfC{$\Gamma \vdash \conc{M\ N : B}{w}$}
+      \DisplayProof
+    \end{center}\bigskip
+    \begin{center}
+      \AxiomC{$\Gamma \vdash N : \conc{N : A}{w'}$}
+      \RightLabel{$\texttt{at}_i$} % at intro
+      \UnaryInfC{$\Gamma \vdash \conc{|held|\ N : A\ \texttt{at}\ \text{w'}}{w}$}
+      \DisplayProof
+      \hskip 1.5em
+      \AxiomC{$\Gamma \vdash \conc{M : A\ \texttt{at}\ \text{w''}}{w'}$}
+      \AxiomC{$\Gamma, \conc{x : A}{w''} \vdash \conc{N : C}{w'}$}
+      \RightLabel{$\texttt{at}_i$} % at elim
+      \BinaryInfC{$\Gamma \vdash \conc{|leta|\ x = M\ |in|\ N : C}{w}$}
+      \DisplayProof
+    \end{center}\bigskip
+    \begin{center}
+      \AxiomC{$\Gamma, \omega \text{ world} \vdash \conc{v : A}{$\omega$}$}
+      \RightLabel{$\forall_i$} % forall intro
+      \UnaryInfC{$\Gamma \vdash \conc{|Λ| \omega . v\ :\ \forall \omega . A}{w}$}
+      \DisplayProof
+      \hskip 1.5em
+      \AxiomC{$\Gamma \vdash \conc{\forall \omega . A}{w}$}
+      \RightLabel{$\forall_e$} % forall elim
+      \UnaryInfC{$\Gamma \vdash \conc{[\sfrac{w'}{\omega}]A}{w}$}
+      \DisplayProof
+    \end{center}\bigskip
+    \begin{center}
+      \AxiomC{$\Gamma \vdash \conc{A}{w'}$}
+      \RightLabel{$\exists_i$} % exists intro
+      \UnaryInfC{$\Gamma \vdash \conc{\exists \omega . A}{w}$}
+      \DisplayProof
+      \hskip 1.5em
+      \AxiomC{$\Gamma \vdash \conc{\exists \omega . A}{w'}$}
+      \AxiomC{$\Gamma, \omega \text{ world}, \conc{A}{$\omega$} \vdash \conc{C}{w}$}
+      \AxiomC{$\omega \not\in FV(C)$}
+      \RightLabel{$\exists_e$} % exists elim
+      \TrinaryInfC{$\Gamma \vdash \conc{C}{w}$}
+      \DisplayProof
+    \end{center}
   \end{figure}
+
+  % }}}
+
+  % Mobility {{{
+  \subsubsection{Mobility}
+  \label{sssec:mobility}
 
   If we go back to the prison analogy, it is clear that the rules in
   \autoref{fig:is5cup} are not enough to provide communication between
@@ -423,11 +565,6 @@
       \AxiomC{}
       \RightLabel{$\texttt{at}_m$} % at mobile
       \UnaryInfC{$A\ \texttt{at}$\ w mobile}
-      \DisplayProof
-      \hskip 1.5em
-      \AxiomC{}
-      \RightLabel{$\shamrock_m$} % shamrock mobile
-      \UnaryInfC{$\shamrock A$\ mobile}
       \DisplayProof
     \end{center}\bigskip
 
@@ -465,10 +602,83 @@
       \AxiomC{$A$ mobile}
       \AxiomC{$\Gamma \vdash N : \conc{A}{w'}$}
       \RightLabel{get} % get
-      \BinaryInfC{$\Gamma \vdash \texttt{get}\ N : \conc{A}{w}$}
+      \BinaryInfC{$\Gamma \vdash |get|\ N : \conc{A}{w}$}
       \DisplayProof
     \end{center}
   \end{figure}
+
+  % }}}
+
+  % Validity {{{
+  \subsubsection{Validity}
+  \label{sssec:validity}
+
+  Currently we only have one possibly judgment that is specifically for a
+  single world. Later these will correspond to programs that run in a single
+  world. We should consider that many functions we use in programs are shared
+  by the client and server, such as simple library functions. \cite{tom7}
+
+  One can argue that the $\Box$ connective (or $\forall$ for worlds) would be
+  enough to cover this purpose. However we have to remember that even in that
+  case the judgment will be in a specific world. Say we have a term
+  $\conc{M : \forall \omega . A}{w}$. this will still be a term in the world w,
+  which means if we want to use it in a different world we will have to move it
+  explicitly, as we will see in \autoref{sssec:mobility}.
+
+  Remember that in our judgment structure, before the $\vdash$, we have smaller
+  judgments (i.e. hypotheses) that look like $\conc{x : A}{w}$.
+  Now to solve the problem we described above, we will to introduce another
+  judgment that describes a value that is valid in all worlds.
+  We will denote this judgment as $u \sim \omega . A$,
+  where $u$ is the name of the variable, and $A$ is a proposition in which the
+  world $\omega$ is bound.
+
+  In \autoref{sssec:hybrid} we mentioned that some judgments can be
+  internalized as propositions, such as $\conc{A}{w}$ to $A\ \texttt{at}\ w$
+  and $A \vdash B$ to $A \supset B$. This raises the question of what an
+  internalization of $u \sim \omega . A$ would look like. Ergo we define a
+  $\Box$-like proposition named $\shamrock$ (read ``shamrock''). \cite{monadic}
+
+  % proof rules for box and shamrock are different
+
+  \begin{figure}[ht]
+    \caption{Validity rules for in Lambda 5}
+    \label{fig:l5shamrock}
+    \begin{center}
+      \AxiomC{$\Gamma, \omega \text{ world} \vdash \conc{M : A}{$\omega$}$}
+      \RightLabel{$\shamrock_i$} % Shamrock intro
+      \UnaryInfC{$\Gamma \vdash \conc{|sham|\ \omega . M : \shamrock_\omega A}{w}$}
+      \DisplayProof
+      \hskip 1.5em
+      \AxiomC{$\Gamma \vdash \conc{M : \shamrock_\omega A}{w'}$}
+      \AxiomC{$\Gamma, u \sim \omega.A  \vdash \conc{N : C}{w'}$}
+      \RightLabel{$\shamrock_e$} % Shamrock elim
+      \BinaryInfC{$\Gamma \vdash \conc{|letsham|\ u=M\ |in|\ N : C}{w}$}
+      \DisplayProof
+    \end{center}\bigskip
+    \begin{center}
+      \AxiomC{}
+      \RightLabel{vhyp} % valid value hyp
+      \UnaryInfC{$\Gamma, u \sim \omega.A \vdash \conc{|vval|\ u : [\sfrac{w}{\omega}]A}{w}$}
+      \DisplayProof
+    \end{center}\bigskip
+    \begin{center}
+      \AxiomC{$A$ mobile}
+      \AxiomC{$\Gamma \vdash \conc{M : A}{w}$}
+      \AxiomC{$\Gamma, u \sim \omega.A \vdash \conc{N : C}{w}$}
+      \RightLabel{put} % put
+      \TrinaryInfC{$\Gamma \vdash \conc{|put|\ u = M\ |in|\ N : C}{w}$}
+      \DisplayProof
+    \end{center}\bigskip
+    \begin{center}
+      \AxiomC{}
+      \RightLabel{$\shamrock_m$} % shamrock mobile
+      \UnaryInfC{$\shamrock A$\ mobile}
+      \DisplayProof
+    \end{center}
+  \end{figure}
+
+  % }}}
 
   % }}}
 
@@ -498,7 +708,6 @@
   Then we have to define the building block judgments that we will use in the
   ``$... \vdash ...$'' kind of judgment. We should start with what can come
   before the $\vdash$. We will call this small judgment a hypothesis.
-  % todo reference to validity section
 
   \begin{code}
     data Hyp : Set where
@@ -506,7 +715,11 @@
       _∼_ : (u : Id) → (World → Type) → Hyp
   \end{code}
 
-  We should start with what comes after the $\vdash$. We will call this
+  We have two kinds of hypothesis judgments, the first is the judgment is
+  a specific world that we described in \autoref{ssec:modal}, and the second is
+  the valid value judgment we defined in \autoref{sssec:validity}.
+
+  We will call what comes after the $\vdash$. We will call this
   small judgment a conclusion.
 
   \begin{code}
@@ -519,13 +732,257 @@
   % CPS {{{
   \subsection{CPS}
 
-  \subsubsection{Conversion from MinML5 to CPS}
+  \begin{code}
+  data Conc : Set where
+    ⋆<_> : (w : World) → Conc
+    ↓_<_> : (τ : Type) (w : World) → Conc
+  \end{code}
+
+  We will also replace the function type |`_⇒_| with an alternative that
+  respects the continuations.
+
+  \begin{code}
+    `_cont : Type → Type
+  \end{code}
+
+  \begin{code}
+    `if_`then_`else_ : ∀ {w} → Γ ⊢ ↓ `Bool < w >
+                     → Γ ⊢ ⋆< w >
+                     → Γ ⊢ ⋆< w >
+                     → Γ ⊢ ⋆< w >
+    `letcase_,_`=_`in_`or_ : ∀ {τ σ w} → (x y : Id)
+                           → Γ ⊢ ↓ (` τ ⊎ σ) < w >
+                           → ((x ⦂ τ < w >) ∷ Γ) ⊢ ⋆< w >
+                           → ((y ⦂ σ < w >) ∷ Γ) ⊢ ⋆< w >
+                           → Γ ⊢ ⋆< w >
+  \end{code}
+
+  \begin{code}
+    `leta_`=_`in_ : ∀ {τ w w'} → (x : Id)
+        → Γ ⊢ ↓ (` τ at w') < w >
+        → ((x ⦂ τ < w' >) ∷ Γ) ⊢ ⋆< w >
+        → Γ ⊢ ⋆< w >
+    `lets_`=_`in_ : ∀ {C w} → (u : Id)
+        → Γ ⊢ ↓ (`⌘ C) < w >
+        → ((u ∼ C) ∷ Γ) ⊢ ⋆< w >
+        → Γ ⊢ ⋆< w >
+    `put_`=_`in_ : ∀ {τ w} {m : τ mobile} → (u : Id)
+        → Γ ⊢ ↓ τ < w >
+        → ((u ∼ (λ _ → τ)) ∷ Γ) ⊢ ⋆< w >
+        → Γ ⊢ ⋆< w >
+  \end{code}
+
+  \begin{code}
+    `let_`=fst_`in_ : ∀ {τ σ w} → (x : Id)
+        → Γ ⊢ ↓ (` τ × σ) < w >
+        → ((x ⦂ τ < w >) ∷ Γ) ⊢ ⋆< w >
+        → Γ ⊢ ⋆< w >
+    `let_`=snd_`in_ : ∀ {τ σ w} → (x : Id)
+        → Γ ⊢ ↓ (` τ × σ) < w >
+        → ((x ⦂ σ < w >) ∷ Γ) ⊢ ⋆< w >
+        → Γ ⊢ ⋆< w >
+  \end{code}
+
+  \begin{code}
+    `let_`=_⟨_⟩`in_ : ∀ {C w} → (x : Id)
+        → Γ ⊢ ↓ `∀ C < w >
+        → (w' : World)
+        → ((x ⦂ C w' < w >) ∷ Γ) ⊢ ⋆< w >
+        → Γ ⊢ ⋆< w >
+    `let_=`unpack_`in_ : ∀ {w} {A : World → Type} (x : Id)
+        → Γ ⊢ ↓ `∃ A < w >
+        → ((ω : World)
+        → ((x ⦂ A ω < w >) ∷ Γ) ⊢ ⋆< w >)
+        → Γ ⊢ ⋆< w >
+  \end{code}
+
+  \begin{code}
+    `go[_]_ : ∀ {w} → (w' : World) → Γ ⊢ ⋆< w' > → Γ ⊢ ⋆< w >
+    `call : ∀ {τ w} → Γ ⊢ ↓ ` τ cont < w > → Γ ⊢ ↓ τ < w > → Γ ⊢ ⋆< w >
+    `halt : ∀ {w} → Γ ⊢ ⋆< w >
+    `prim_`in_ : ∀ {h w} → (x : Prim h) → (h ∷ Γ) ⊢ ⋆< w > → Γ ⊢ ⋆< w >
+  \end{code}
+
+  \subsubsection{Conversion from ML5 to CPS}
+
+  To convert ML5 to JavaScript, we need one function to convert the value type,
+  and another one to convert the star expressions.
+
+  \begin{code}
+  convertValue : ∀ {Γ τ w}
+               → Γ ⊢₅ ↓ τ < w >
+               → (convertCtx Γ) ⊢ₓ ↓ (convertType τ) < w >
+  convertExpr : ∀ {Γ τ w}
+              → (K : ∀ {Γ'} {s' : (convertCtx Γ) ⊆ Γ'} → Γ' ⊢ₓ ↓ (convertType τ) < w > → Γ' ⊢ₓ ⋆< w >)
+              → Γ ⊢₅ τ < w >
+              → (convertCtx Γ) ⊢ₓ ⋆< w >
+  \end{code}
+
+  It turns out that defining this function with a direct induction on the
+  values and expressions is not straightforward. Therefore, we slightly alter
+  the type of the functions with generalization for all subsets of
+  |convertCtx Γ|.
+
+  \begin{code}
+    convertValue' : ∀ {Γ Γ' τ w } {s : (convertCtx Γ) ⊆ Γ'}
+                  → Γ ⊢₅ ↓ τ < w >
+                  → Γ' ⊢ₓ ↓ (convertType τ) < w >
+    convertExpr' : ∀ {Γ Γ' τ w}
+                → {s : (convertCtx Γ) ⊆ Γ'}
+                → (K : ∀ {Γ''} {s' : Γ' ⊆ Γ''} → Γ'' ⊢ₓ ↓ (convertType τ) < w > → Γ'' ⊢ₓ ⋆< w >)
+                → Γ ⊢₅ τ < w >
+                → Γ' ⊢ₓ ⋆< w >
+  \end{code}
+
+  Since this is the first of the type directed conversions that we are doing,
+  let's look at some uninteresting and interesting cases of this conversion.
+
+  \paragraph{Uninteresting cases}
+
+  Every time we convert one language to another, there will be uninteresting
+  cases that do not change from language to language, however the types require
+  us to fulfill the formalities. In the next conversions, we will often omit
+  the uninteresting cases, but since this is the first conversion we will go
+  over some of them to have a general sense of what we have to do.
+
+  \begin{code}
+    convertValue' {s = s} (` t ∧ u) = ` (convertValue' {s = s} t) ∧ (convertValue' {s = s} u)
+  \end{code}
+
+  The and operator for booleans is a simple example of a straightforward
+  conversion with recursive calls. We convert the two terms |t| and |u|, and
+  then use the and operator in the CPS language to construct our new term.
+  There are many unary and binary operators like this in our language, and
+  their conversions consist of usage of the same constructor and recursive
+  calls, like the case we have just seen.
+
+  \begin{code}
+    convertValue' {s = s} (`v x ∈) = `v x (s (convert∈ ∈))
+  \end{code}
+
+  We define the conversion of a variable reference in ML5 to one in CPS.  We
+  have the same constructor, however since the context is changed we have to
+  change the proof that the given element is in the new context. We define a
+  simple inductive lemma |convert∈| to handle that problem.
+
+  \begin{code}
+    convert∈ : ∀ {h Γ} → h ∈ Γ → (convertHyp h) ∈ (convertCtx Γ)
+    convert∈ (here px) = here (cong convertHyp px)
+    convert∈ (there i) = there (convert∈ i)
+  \end{code}
+
+  Now let's go back to the two |convertValue'|. We have constructors like |`Λ|
+  and |`sham| that take a function from |World| to a term. Conversion for them will
+  proceed as follows:
+
+  \begin{code}
+    convertValue' {s = s} (`Λ C) = `Λ (λ ω → convertValue' {s = s} (C ω))
+  \end{code}
+
+
+  \paragraph{Interesting cases}
+
+  \begin{code}
+    convertValue' {s = s} (`λ x ⦂ σ ⇒ t) =
+      `λ (x ++ "_y") ⦂ (` (convertType σ) × ` _ cont) ⇒
+      (`let x `=fst (`v (x ++ "_y") (here refl)) `in
+       convertExpr' {s = sub-lemma (there ∘ s)}
+                   (λ {_}{s'} v →
+                   `let (x ++ "_k") `=snd `v (x ++ "_y") (s' (there (here refl)))
+                   `in (`call (`v (x ++ "_k") (here refl)) (⊆-term-lemma there v))) t)
+  \end{code}
+
+  \begin{code}
+    convertExpr' {s = s} K (` t · u) =
+      convertExpr' {s = s} (λ {_}{s'} v → convertExpr' {s = s' ∘ s}
+        (λ {_}{s''} v' → `call (⊆-term-lemma s'' v) (` v' , (`λ "x" ⦂ _ ⇒ K {s' = there ∘ s'' ∘ s'} (`v "x" (here refl))))) u) t
+  \end{code}
+
+  \begin{code}
+    convertExpr' {w = w}{s = s} K (`get {w' = w'}{m = m} t) =
+        `go[ w' ] (convertExpr' {s = s} (λ {_}{s'} v →
+          `put_`=_`in_ {m = convertMobile m} "u" v (`go[ w  ] (K {s' = there ∘ s'} (`vval "u" (here refl))))) t)
+  \end{code}
+
   % }}}
-c
-  % Closure conversion {{{
-  \subsection{Closure conversion}
+
+  % Closure {{{
+  \subsection{Closure}
+
+  Closure language will have two more types different from the CPS language.
+
+  \begin{code}
+    `Env : List Hyp → Type
+    `Σt[t×[_×t]cont] : Type → Type
+  \end{code}
+
+  Let's start by adding the terms to use the recently introduced type |`Env|.
+
+  \begin{code}
+    `buildEnv : ∀ {Δ w} → Δ ⊆ Γ → Γ ⊢ ↓ `Env Δ < w >
+    `open_`in_ : ∀ {Δ w} → Γ ⊢ ↓ `Env Δ < w > → (Δ ++ Γ) ⊢ ⋆< w > → Γ ⊢ ⋆< w >
+  \end{code}
+
+  We will have to add existential pair intro and elim rules to our language.
+
+  \begin{code}
+    `packΣ : ∀ {σ w} → (τ : Type)
+           → Γ ⊢ ↓ (` τ × ` (` σ × τ) cont) < w >
+           → Γ ⊢ ↓ `Σt[t×[ σ ×t]cont] < w >
+    `let_,_`=unpack_`in_ : ∀ {w σ} → (τ : Type) (x : Id)
+                           → (v : Γ ⊢ ↓ `Σt[t×[ σ ×t]cont] < w >)
+                           → ((x ⦂ ` τ × ` (` σ × τ) cont < w >) ∷ Γ) ⊢ ⋆< w >
+                           → Γ ⊢ ⋆< w >
+  \end{code}
+
+  Now that we have a hardcoded existential pair type in our language, we can
+  alter the definition of |`go[_]| from our previous language.
+
+  \begin{code}
+    `go-cc[_] : ∀ {w} → (w' : World)
+                       → Data.String.String
+                         → Γ ⊢ ↓ `Σt[t×[ `Unit ×t]cont] < w' >
+                         → Γ ⊢ ⋆< w >
+  \end{code}
+
 
   \subsubsection{Conversion from CPS to the closure conversion language}
+
+  We need a conversion function for values and one for continuations, with the
+  following types.
+
+  \begin{code}
+    convertValue : ∀ {Γ τ w} → Γ ⊢ₓ ↓ τ < w > → (convertCtx Γ) ⊢ₒ ↓ (convertType τ) < w >
+    convertCont : ∀ {Γ w} → Γ ⊢ₓ ⋆< w > → (convertCtx Γ) ⊢ₒ ⋆< w >
+  \end{code}
+
+
+  \begin{code}
+    convertValue {Γ}{_}{w} (`λ x ⦂ σ ⇒ t) = `packΣ (`Env (convertCtx Γ)) (` `buildEnv id , (`λ "p" ⦂ _ ⇒ c))
+      where
+        t' : convertCtx ((x ⦂ σ < w >) ∷ Γ) ⊢ₒ ⋆< w >
+        t' = convertCont t
+
+        c : (("p" ⦂ ` convertType σ × `Env (convertCtx Γ) < w >) ∷ []) ⊢ₒ ⋆< w >
+        c = `let "env" `=snd `v "p" (here refl) `in
+            `open `v "env" (here refl) `in
+            `let x `=fst `v "p" (++ʳ (convertCtx Γ) (there (here refl))) `in
+            (Closure.Terms.⊆-cont-lemma (sub-lemma ++ˡ) t')
+  \end{code}
+
+  \begin{code}
+    convertCont {Γ} (`call t u) =
+      `let contextToType Γ , "p" `=unpack (convertValue t) `in
+      `let "e" `=fst `v "p" (here refl) `in
+      `let "f" `=snd `v "p" (there (here refl)) `in
+      `call (`v "f" (here refl))
+            (` Closure.Terms.⊆-term-lemma (there ∘ there ∘ there) (convertValue u) , `v "e" (there (here refl)))
+  \end{code}
+
+  \begin{code}
+    convertCont (`go[ w' ] u) = `go-cc[ w' ] "" (convertValue (`λ "y" ⦂ `Unit ⇒ CPS.Terms.⊆-cont-lemma there u ))
+  \end{code}
+
   % }}}
 
   % Lambda lifting {{{
@@ -542,11 +999,11 @@ c
   entryPoint : ∀ {w}
              → [] ⊢ ⋆< w >
              → Σ (List (Id × Type × World))
-                 (λ newbindings → All (λ { (_ , σ , w') → [] ⊢ₒ ↓ σ < w' > }) newbindings
+                 (λ newbindings → All (λ { (_ , σ , w') → [] ⊢ ↓ σ < w' > }) newbindings
                  × (toCtx newbindings) ⊢ ⋆< w >)
   \end{code}
   The program structure in the previous language is just a closed continuation
-  |[] ⊢ₒ ⋆< w >|.  In the new structure, we will have a list of closed terms,
+  |[] ⊢ ⋆< w >|.  In the new structure, we will have a list of closed terms,
   which are actually the lambda terms we are relocating, and a continuation
   that should be able to use the list of closed terms. However we cannot simply
   have a list of terms, because the type of terms change according to the
@@ -583,14 +1040,14 @@ c
   \begin{code}
     liftValue : ∀ {Γ τ w} → ℕ
               → Γ ⊢ₒ ↓ τ < w >
-              → ℕ × Σ (List (Id × Typeₒ × World))
-                       (λ newbindings → All (λ { (_ , σ , w') → [] ⊢ₒ ↓ σ < w' > }) newbindings
-                       × (Γ +++ toCtx newbindings) ⊢ₒ ↓ τ < w >)
+              → ℕ × Σ (List (Id × Type × World))
+                       (λ newbindings → All (λ { (_ , σ , w') → [] ⊢ ↓ σ < w' > }) newbindings
+                       × (Γ +++ toCtx newbindings) ⊢ ↓ τ < w >)
     liftCont : ∀ {Γ w} → ℕ
              → Γ ⊢ₒ ⋆< w >
-             → ℕ × Σ (List (Id × Typeₒ × World))
-                      (λ newbindings → All (λ { (_ , σ , w') → [] ⊢ₒ ↓ σ < w' > }) newbindings
-                      × (Γ +++ toCtx newbindings) ⊢ₒ ⋆< w >)
+             → ℕ × Σ (List (Id × Type × World))
+                      (λ newbindings → All (λ { (_ , σ , w') → [] ⊢ ↓ σ < w' > }) newbindings
+                      × (Γ +++ toCtx newbindings) ⊢ ⋆< w >)
   \end{code}
 
   Types of these two functions resemble |entryPoint|, except they have a
@@ -599,16 +1056,33 @@ c
   generate new names for the lambda terms. It is increased by one for each
   lambda and accumulated throughout the entire lifting process.
 
-  The most interesting case in these two function is how lambdas are handled.
+  The most interesting case in these two functions is how lambdas are handled.
 
   \begin{code}
     liftValue {Γ}{_}{w} n (`λ x ⦂ σ ⇒ t) with liftCont n t
     ... | n' , xs , Δ , t' =
-      suc n'
+        suc n'
       , ("_lam" ++ show n' , ` σ cont , w) ∷ xs
       , (`λ x ⦂ σ ⇒ t) ∷ Δ
       , `v ("_lam" ++ show n') (++ʳ Γ (here refl))
   \end{code}
+
+  Our return type is basically a product of four values. Let's go over each:
+  \begin{enumerate}[1.]
+  \item The accumulator for the name generator. In this case it is increased by
+    one because we just used |n'| in naming the lambda.
+  \item The first part of the existential |Σ (List (Id × Typeₒ × World)) _|.
+    We now have one more lambda to gather, so we have to add one more term with
+      the appropriate name, type and world.
+  \item The actual term itself to the |All| list we defined above.
+  \item What the lambda will be replaced with. Since the lambda now has a name
+    and it is in the context of the resulting term, use the |`v| term to refer
+      to it instead of having the literal lambda term.
+  \end{enumerate}
+
+  The other cases of these two functions consist of recursive calls, list
+  append equality proofs and calls to the subset lemma. The actual code is
+  verbose and not very interesting for our purposes.
 
   % }}}
 
@@ -656,7 +1130,7 @@ c
   Also for each primitive that is a valid value, such as logging, we define two
   primitives, one copy for client and another for server.
 
-  \subsubsection{Conversion to LiftedMonomorphic}
+  \subsubsection{Monomorphization}
 
   Even though defining the terms that are different in the |LiftedMonomorphic|
   language shows most of the conversion process, we still need to state the
@@ -737,6 +1211,8 @@ c
 
 \section{Formalization of JavaScript}
 
+% JS formalization intro {{{
+
 The last step of our compiler is code generation, and it is not practical to
 generate target code directly as a concatenation of strings. The common
 practice is to have an abstraction of the target language, and then generate
@@ -744,7 +1220,7 @@ the code using that abstraction.
 
 However to ensure that we are compiling to a language that executes without
 exception; we will formalize a subset of JavaScript that enforces certain type and
-context restrictions. A simply typed JavaScript, if you will. % TODO
+context restrictions. A simply typed JavaScript, if you will.
 
 JavaScript is an imperative language that distinguishes between statements and
 expressions. We want to reflect the difference between these two. However, it
@@ -823,6 +1299,8 @@ and |Γ ⊢ τ < w >| should read ``the expression under the context |Γ|, of
 the type |τ|, in the world |w|''.
 
 Now we can move on to the actual definitions of these notions.
+
+% }}}
 
 % Statements {{{
 \subsection{Statements}
@@ -938,8 +1416,7 @@ in the previous languages, it adds a reference or definition of the primitive
 to the local context. The definition of |Prim : Hyp → Set| contains the
 corresponding terms for the previous primitives such as |`alert|, |`readFile|,
 |`log| etc. In addition, we have two more primitives, socket references for the
-client and server. We will go in detail about them in the section of conversion
-to JS. % TODO reference
+client and server. We will go in detail about them in \autoref{sec:tojs}.
 
 % }}}
 
@@ -1101,11 +1578,58 @@ example \lstinline{JSON.stringify(\{"a": undefined\})} returns
 % Conversion to JavaScript {{{
 
 \section{Conversion to JavaScript}
+\label{sec:tojs}
 
 The $\lambda$-lifted monomorphic language gives us a list of lambda terms and a
 term standing by itself that refers to those lambda terms.
 
+\begin{code}
+entryPoint : ∀ {w}
+            → Σ (List (Id × Typeᵐ × World))
+                (λ newbindings → All (λ { (_ , σ , w') → [] ⊢ᵐ ↓ σ < w' > }) newbindings
+                               × (LiftedMonomorphic.Types.toCtx newbindings) ⊢ᵐ ⋆< w >)
+            → (Stm [] < client >) × (Stm [] < server >)
+\end{code}
 
+
+\begin{code}
+    convertCont : ∀ {Γ Δ Φ}
+                → {s : only client (convertCtx Γ) ⊆ Δ}
+                → {s' : only server (convertCtx Γ) ⊆ Φ}
+                → (w : World)
+                → Γ ⊢ᵐ ⋆< w >
+                → Σ _ (λ δ → FnStm Δ ⇓ δ ⦂ nothing < client >)
+                  × Σ _ (λ φ → FnStm Φ ⇓ φ ⦂ nothing < server >)
+    convertValue : ∀ {Γ Δ Φ τ w}
+                 → {s : only client (convertCtx Γ) ⊆ Δ}
+                 → {s' : only server (convertCtx Γ) ⊆ Φ}
+                 → Γ ⊢ᵐ ↓ τ < w >
+                 → (only w (convertCtx Γ)) ⊢ⱼ (convertType {w} τ) < w >
+                   × Σ _ (λ δ → FnStm Δ ⇓ δ ⦂ nothing < client >)
+                   × Σ _ (λ φ → FnStm Φ ⇓ φ ⦂ nothing < server >)
+\end{code}
+
+\begin{code}
+    convertCont {Γ}{Δ}{Φ}{s = s}{s' = s'} client (`if t `then u `else v)
+      with convertValue {Γ}{Δ}{Φ}{s = s}{s' = s'} t
+    ... | t' , (Δ' , tCli) , (Φ' , tSer)
+      with convertCont {Γ}{Δ' +++ Δ}{Φ' +++ Φ}{s = ++ʳ Δ' ∘ s}{s' = ++ʳ Φ' ∘ s'} client u
+    ... | (Δ'' , uCli) , (Φ'' , uSer)
+      with convertCont {Γ}{Δ' +++ Δ}{Φ' +++ Φ}{s = ++ʳ Δ' ∘ s}{s' = ++ʳ Φ' ∘ s'} client v
+    ... | (Δ''' , vCli) , (Φ''' , vSer) =
+          (_ , (tCli ； (`if ⊆-exp-lemma (++ʳ Δ' ∘ s) t' `then uCli `else vCli)))
+        , (_ , (tSer ； (uSer ； ⊆-fnstm-lemma (++ʳ Φ'') vSer)))
+\end{code}
+
+\begin{code}
+    convertCont {Γ}{Δ}{Φ}{s = s}{s' = s'} w (`let x `=fst t `in u)
+      with convertValue {Γ}{Δ}{Φ}{s = s}{s' = s'} t
+    convertCont {Γ}{Δ}{Φ}{s = s}{s' = s'} client (`let x `=fst t `in u) | t' , (Δ' , tCli) , (Φ' , tSer)
+      with convertCont {_}{_ ∷ (Δ' +++ Δ)}{Φ' +++ Φ}{s = sub-lemma (++ʳ Δ' ∘ s)}{s' = ++ʳ Φ' ∘ s'} client u
+    ... | (Δ'' , uCli) , (Φ'' , uSer) =
+          (_ , (tCli ； (`var x (`proj (⊆-exp-lemma (++ʳ Δ' ∘ s) t') "fst" (there (here refl))) ； uCli)))
+        , (_ , (tSer ； uSer))
+\end{code}
 
 % }}}
 

@@ -6,10 +6,10 @@ default: preview
 
 compile:
 	lhs2TeX -o $(FILENAME).tex $(SOURCENAME).lagda --agda
-	pdflatex $(FILENAME).tex
+	pydflatex $(FILENAME).tex
 	bibtex $(FILENAME)
-	pdflatex $(FILENAME).tex
-	pdflatex $(FILENAME).tex
+	pydflatex $(FILENAME).tex
+	pydflatex $(FILENAME).tex
 	mv $(FILENAME).pdf $(OUTPUTNAME).pdf
 
 open:
