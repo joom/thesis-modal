@@ -105,10 +105,11 @@
   thesis, I limit his argument to simple web programming and claim that a modal
   logic based language provides a way to write readable code and correct web
   applications.  To do this, I defined and implemented a minimal language
-  called MinML5 in Agda and then wrote a compiler to JavaScript for it. The
+  called ML5 in Agda and then wrote a compiler to JavaScript for it. The
   compiler is a series of type directed translations through fully formalized
   languages, the last one of which is a very limited subset of JavaScript.
-  As opposed to Murphy's compiler
+  As opposed to Murphy's compiler, this one compiles to JavaScript both on the
+  front end and back end through Node.js.
 \end{abstract}
 
 \frontmatter
@@ -127,10 +128,42 @@
 % Introduction {{{
 \section{Introduction}
 
+The field of web development was drastically different a decade ago from what
+it is today. AJAX and frameworks like jQuery and Prototype had just been
+introduced to the world and programmers had just started to use JavaScript for
+things other than tacky effects. Concepts like single-page application and
+server-side JavaScript were not around. As these things changed and JavaScript
+became a sine qua non in web programming, programmers started to complain more
+and more about the idiosyncracies of this language. Despite the inconvenience
+of programming with JavaScript, people still had to use it because there were
+no serious alternatives. This issue came to be known as the JavaScript
+problem.\cite{jsprob} The common solution to it was to create higher level
+languages or different syntaxes that compiled back to JavaScript.
+
+This thesis stems from the same necessity of programming in a language that is
+more sensible than JavaScript. Another problem we hope to solve is that current
+web applications require too much boilerplate code to do network communication
+with the server. This makes writing single-page applications an annoying task.
+The language we will define in this thesis will not attempt solving these
+issues altogether, but it will take a first step in addressing them.
+
+Since we want to design a more sensible language that does not have the
+idiosyncracies of JavaScript and that handles the network communication for us,
+we now look for a basis for our language. Murphy's research shows us that a
+language that uses a modal type system can handle resources in a distributed
+program elegantly.\cite{tom7} This thesis will explore what happens when we
+restrict the distributed system to two computers: client, i.e.\ user of the web
+program, and server. Compilation process from our initial language, ML5, to
+JavaScript will be a series of simple type-directed conversions. Each step
+should will a specific purpose, and we should be able prove certain properties
+about the compilation at each step.
+
+Starting from ML5, our compiler has 5 conversion steps: continuation-passing
+style, closure conversion, lambda lifting, monomorphization, and JavaScript.
+
 % what is accomplished
 % general sense of how much code there is
   % section by section
-
 
 % }}}
 
