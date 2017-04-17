@@ -69,7 +69,7 @@
 
 % }}}
 
-% Title, Abstract, TOC {{{
+% Title, Abstract, TOC etc. {{{
 
 \title{Verified Compilation of ML5 to JavaScript}
 \author{Joomy Korkut}
@@ -92,6 +92,25 @@
 \end{dedication}
 
 \begin{acknowledgements}
+
+  First and foremost, I would like to thank Dan Licata, my research advisor.
+  He is the primary reason that I had an opportunity to get into computer
+  science research, and I am immensely grateful for his patience and humility
+  throughout the years that we worked together.  Every undeserved "Good work!"
+  I got from him was a great source of motivation for me.
+
+  The amazing computer science classes I have taken with James Lipton, Norman
+  Danner, and Jeff Epstein, and the eye-opening mathematics classes I have
+  taken with Cameron Donnay Hill and David Pollack have sparkled my interest
+  in research, so I would like to thank them for that.
+
+  I would like to thank my dear colleague and friend Maksim Trifunovski for his
+  support and comradery throughout the years we did research and worked as
+  course assistants, not to mention his endless supply of \textit{rakija}.
+
+  Finally, I would like to thank Pi, Emily, Cloie, Molly, Kivanc, Damlasu and
+  my family. I am thankful to the emotional support they provided by putting up
+  with me babbling about linguistics, religion, history and politics.
 
 \end{acknowledgements}
 
@@ -127,6 +146,7 @@
 
 % Introduction {{{
 \section{Introduction}
+\label{sec:intro}
 
 The field of web development was drastically different a decade ago from what
 it is today. AJAX and frameworks like jQuery and Prototype had just been
@@ -156,14 +176,34 @@ restrict the distributed system to two computers: client, i.e.\ user of the web
 program, and server. Compilation process from our initial language, ML5, to
 JavaScript will be a series of simple type-directed conversions. Each step
 should will a specific purpose, and we should be able prove certain properties
-about the compilation at each step.
+about the compilation at each step. Murphy's work goes over some these
+steps, but it prioritizes implementation over formalization, and does not go
+as deep into formalization as we will go in this thesis.
+
+Our final program\footnote{The Agda source code is available here:
+\url{http://github.com/joom/modal}} consists of $\approx 3800$ lines of
+executable Agda code. It currently does not have a parser, so the code has to
+written in Agda, using the abstract syntax tree (AST) of ML5. However the task
+is not as daunting as it sounds, because of the mixfix variable naming in Agda,
+a program written in the AST does not look that different from any other
+function language. For example, a simple program that alerts a string on the
+browser looks like this:
+
+\begin{code}
+  program : [] ⊢₅ `Unit < client >
+  program = `prim `alert `in
+    (` `val (`v "alert" (here refl)) · `val (`string "hello world"))
+\end{code}
 
 Starting from ML5, our compiler has 5 conversion steps: continuation-passing
 style, closure conversion, lambda lifting, monomorphization, and JavaScript.
+Currently all the steps are entirely completed except the conversion from the
+monomorphic language to JavaScript. Currently conversions for base types and
+function calls work properly, and there is partially working network
+communication between the client and the server.
 
-% what is accomplished
-% general sense of how much code there is
-  % section by section
+Now let's go over some aspects of modal logic, so that we can understand the
+modal type system we will use to organize our web programs.
 
 % }}}
 
@@ -180,10 +220,10 @@ style, closure conversion, lambda lifting, monomorphization, and JavaScript.
     \AxiomC{$B$}
     \BinaryInfC{$A \land B$}
   \end{prooftree}
-  Now are $A$, $B$ and $A \land B$ in this rule propositions or judgments? The
-  correct answer is judgments, because what this notation means is the
-  following sentence: ``$A \land B$ is true, if $A$ is true and $B$ is true.''
-  The ambiguity about the notions of proposition and judgment can be removed by
+  Now are $A$, $B$ and $A \land B$ in this rule propositions or judgments?
+  Syntactically they are propositions, but if we intend to say ``$A \land B$ is
+  true, if $A$ is true and $B$ is true.'' then they are in fact judgments.  The
+  ambiguity about the notions of proposition and judgment can be removed by
   adopting a new notation for judgments; we would now write ``$A$ true'' or
   ``$\vdash A$'' for a judgment, instead of just ``$A$''.
 
@@ -720,6 +760,10 @@ style, closure conversion, lambda lifting, monomorphization, and JavaScript.
 % Type-directed translation {{{
 
 \section{Type-directed translation}
+
+We mentioned in \autoref{sec:intro} that our compiler has 5 conversion steps:
+continuation-passing style, closure conversion, lambda lifting,
+monomorphization, and JavaScript.
 
   % MinML5 {{{
   \subsection{MinML5}
