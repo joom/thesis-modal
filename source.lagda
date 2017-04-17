@@ -6,7 +6,7 @@
 
   % Imports and Styling {{{
   \RequirePackage{amsmath}
-  \documentclass[11pt,draft]{westhesis} % add "final" flag when finished
+  \documentclass[11pt,final]{westhesis} % add "final" flag when finished
   \def\textmu{}
 
   %include agda.fmt
@@ -140,7 +140,7 @@
 \makeabstract
 \phantomsection
 \addcontentsline{toc}{section}{Table of Contents}
-\tableofcontents
+{\small\tableofcontents}
 \mainmatter
 % }}}
 
@@ -180,6 +180,18 @@ about the compilation at each step. Murphy's work goes over some these
 steps, but it prioritizes implementation over formalization, and does not go
 as deep into formalization as we will go in this thesis.
 
+In the formalization and compiler implementation, we are using the Agda proof
+assistant.\cite{norell} Agda is a dependently typed functional programming
+language with Haskell-like syntax, and this thesis will not go into detail
+about explaining the language.\footnote{Since we will not go into detail about
+Agda or dependent typing, one crucial concept we should remember is types can
+be values in a dependently typed language, just like functions are values in a
+functional language. Therefore a type will also belong to a type. The type of
+types in Agda is called |Set|, which will come up often in this thesis.
+However, not every Agda type belong to the type |Set|. Since we will not use
+this distinction, we will omit the explanation. For more information, you can
+read about Girard's paradox. }
+
 Our final program\footnote{The Agda source code is available here:
 \url{http://github.com/joom/modal}} consists of $\approx 3800$ lines of
 executable Agda code. It currently does not have a parser, so the code has to
@@ -191,8 +203,7 @@ browser looks like this:
 
 \begin{code}
   program : [] ⊢₅ `Unit < client >
-  program = `prim `alert `in
-    (` `val (`v "alert" (here refl)) · `val (`string "hello world"))
+  program = `prim `alert `in (` `val (`v "alert" (here refl)) · `val (`string "hello world"))
 \end{code}
 
 Starting from ML5, our compiler has 5 conversion steps: continuation-passing
@@ -482,6 +493,7 @@ modal type system we will use to organize our web programs.
 
   % Lambda 5 {{{
   \subsection{Lambda 5}
+  \label{ssec:l5}
 
   % L5 intro {{{
   We stated the rules of modal logic in the previous section, and now we want
@@ -761,12 +773,35 @@ modal type system we will use to organize our web programs.
 
 \section{Type-directed translation}
 
+% TDT intro {{{
 We mentioned in \autoref{sec:intro} that our compiler has 5 conversion steps:
 continuation-passing style, closure conversion, lambda lifting,
 monomorphization, and JavaScript.
 
-  % MinML5 {{{
-  \subsection{MinML5}
+We will start this section by describing ML5, which is more or less an Agda
+formalization of Lambda 5 that we described in \autoref{ssec:l5}.  Our next
+task will be to define a similar language that respects continuation-passing
+style, and convert from ML5 to the new one.  Considering that most actions in
+JavaScript are run through callbacks\footnote{A callback in JavaScript is not a
+syntactic construct, it is rather a widely-used pattern. When there is a
+computation that can take long, or will have to do communication, the common
+usage is to pass it a function as an argument, which will be called when the
+computation is finished. Because of this, programmers often end up with nested
+anonymous function that are hard to read, also called ``callback hell''. Since
+we are generating code that is not meant to be read, we can overlook that
+problem.}, this process is necessary move us closer to JavaScript, our final
+target language. Then we eventually want to hoist all lambdas in a program to
+the top, so that we can call them by their names during network communication.
+However, this is not possible because these functions contain bound variables.
+That is why we create closures to get rid of the bound variables. Only after
+that we can hoist the functions, i.e.\ lambda lifting. Finally, before
+conversion to JavaScript, we have to monomorphize valid values into values in
+specific worlds.
+
+% }}}
+
+  % ML5 {{{
+  \subsection{ML5}
   In the previous section we presented a propositional modal logic and the
   proof terms that correspond to that logic. In this section, our goal is to
   formalize this language and the compilation process to JavaScript.
@@ -792,9 +827,15 @@ monomorphization, and JavaScript.
       _∼_ : (u : Id) → (World → Type) → Hyp
   \end{code}
 
-  We have two kinds of hypothesis judgments, the first is the judgment is
-  a specific world that we described in \autoref{ssec:modal}, and the second is
-  the valid value judgment we defined in \autoref{sssec:validity}.
+  We have two kinds of hypothesis judgments, the first is the judgment is a
+  specific world that we described in \autoref{ssec:modal},\footnote{For
+  convenience we defined |Id = String|, where |String| is the Agda type for
+  strings.} and the second is the valid value judgment we defined in
+  \autoref{sssec:validity}. It is worth mentioning that a valid value takes a
+  function |World → Type|, we have to apply the appropriate world to this
+  function if we want to actually use the type.\cite{monadic} Using a function
+  for this saves us from the trouble of having to define substitution
+  ourselves.  We will also define |Context = List Hyp|.
 
   We will call what comes after the $\vdash$. We will call this
   small judgment a conclusion.
@@ -804,10 +845,163 @@ monomorphization, and JavaScript.
       _<_> : (τ : Type) (w : World) → Conc
       ↓_<_> : (τ : Type) (w : World) → Conc
   \end{code}
+
+  We have two kinds of conclusion; we will call the first an expression and the
+  second a value. In our definition, an expression is a term that
+  potentially requires network communication for evaluation. A value, on the
+  other hand, does not.
+
+  Before defining the terms of ML5, let's define the mobility judgment in ML5
+  so that we can use it in the terms.
+
+  \begin{code}
+  data _mobile : Type → Set where
+    `Boolᵐ : `Bool mobile
+    `Intᵐ : `Int mobile
+    `Unitᵐ : `Unit mobile
+    `Stringᵐ : `String mobile
+    `_atᵐ_ : ∀ {A w} → (` A at w) mobile
+    `_×ᵐ_ : ∀ {A B} → A mobile → B mobile → (` A × B) mobile
+    `_⊎ᵐ_ : ∀ {A B} → A mobile → B mobile → (` A ⊎ B) mobile
+    `∀ᵐ : ∀ {A} → A mobile → (`∀ (λ _ → A)) mobile
+    `∃ᵐ : ∀ {A} → A mobile → (`∃ (λ _ → A)) mobile
+    `⌘ᵐ : ∀ {A} → (`⌘ (λ _ → A)) mobile
+  \end{code}
+
+  Now that we have defined mobility as a direct formalization of
+  \autoref{fig:l5Mobile}, let's define the notion of terms in ML5 and terms of
+  the base types.
+
+  \begin{code}
+  data _⊢_ (Γ : Context) : Conc → Set where
+    `tt : ∀ {w} → Γ ⊢ ↓ `Unit < w >
+    `string : ∀ {w} → Data.String.String → Γ ⊢ ↓ `String < w >
+    `true  : ∀ {w} → Γ ⊢ ↓ `Bool < w >
+    `false : ∀ {w} → Γ ⊢ ↓ `Bool < w >
+    `_∧_ : ∀ {w} → Γ ⊢ ↓ `Bool < w > → Γ ⊢ ↓ `Bool < w > → Γ ⊢ ↓ `Bool < w >
+    `_∨_ : ∀ {w} → Γ ⊢ ↓ `Bool < w > → Γ ⊢ ↓ `Bool < w > → Γ ⊢ ↓ `Bool < w >
+    `¬_  : ∀ {w} → Γ ⊢ ↓ `Bool < w > → Γ ⊢ ↓ `Bool < w >
+    `if_`then_`else_ : ∀ {τ w} → Γ ⊢ `Bool < w > → Γ ⊢ τ < w > → Γ ⊢ τ < w > → Γ ⊢ τ < w >
+    `n_  : ∀ {w} → ℤ → Γ ⊢ ↓ `Int < w >
+    `_≤_ : ∀ {w} → Γ ⊢ ↓ `Int < w > → Γ ⊢ ↓ `Int < w > → Γ ⊢ ↓ `Bool < w >
+    `_+_ : ∀ {w} → Γ ⊢ ↓ `Int < w > → Γ ⊢ ↓ `Int < w > → Γ ⊢ ↓ `Int < w >
+    `_*_ : ∀ {w} → Γ ⊢ ↓ `Int < w > → Γ ⊢ ↓ `Int < w > → Γ ⊢ ↓ `Int < w >
+  \end{code}
+
+  We define |_⊢_| to be the type of terms, similar to our usage in
+  \autoref{ssec:l5}. Then we define literals and some operators for the base
+  types |`Unit|, |`String|, |`Bool| and |`Int|. In order to make the language
+  more practical, one can expand this to new base types and operators, such as
+  floating numbers, hexadecimals etc., but what we have here is enough for a
+  proof of concept.
+
+  \begin{code}
+    `v : ∀ {τ w} → (x : Id) → x ⦂ τ < w > ∈ Γ → Γ ⊢ ↓ τ < w >
+    `vval : ∀ {w C} → (u : Id) → u ∼ C ∈ Γ → Γ ⊢ ↓ C w < w >
+  \end{code}
+
+  We are defining two values to use variables that are already in the context.
+  The first is for the judgment |x ⦂ τ < w >|, which refers to values that are
+  in a specific world.  The second is for the judgment |u ∼ C|, which refers to
+  valid values. In both cases, our values require a proof that the variable we
+  are using is actually in the context.
+
+  \begin{code}
+    `λ_⦂_⇒_ : ∀ {τ w} → (x : Id) (σ : Type) → (x ⦂ σ < w > ∷ Γ) ⊢ τ < w > → Γ ⊢ ↓ (` σ ⇒ τ) < w >
+    `_·_ : ∀ {τ σ w} → Γ ⊢ (` τ ⇒ σ) < w > → Γ ⊢ τ < w > → Γ ⊢ σ < w >
+  \end{code}
+
+  We define lambda functions and function application. A lambda function takes
+  the arguments name and type, and a function body that now contains the
+  argument as well.  A lambda function is a value by itself, because it cannot
+  be further reduced and therefore its evaluation does not require network
+  connection. However, notice that the function body can require communication,
+  therefore so can a function application. For that reason, function
+  application is an expression.
+
+  \begin{code}
+    `_,_ : ∀ {τ σ w} → Γ ⊢ ↓ τ < w > →  Γ ⊢ ↓ σ < w > →  Γ ⊢ ↓ (` τ × σ) < w >
+    `fst : ∀ {τ σ w} → Γ ⊢ (` τ × σ) < w > → Γ ⊢ τ < w >
+    `snd : ∀ {τ σ w} → Γ ⊢ (` τ × σ) < w > → Γ ⊢ σ < w >
+    `inl_`as_ : ∀ {τ w} → Γ ⊢ ↓ τ < w > → (σ : Type) → Γ ⊢ ↓ (` τ ⊎ σ) < w >
+    `inr_`as_ : ∀ {σ w} → Γ ⊢ ↓ σ < w > → (τ : Type) → Γ ⊢ ↓ (` τ ⊎ σ) < w >
+    `case_`of_⇒_||_⇒_ : ∀ {τ σ υ w} → Γ ⊢ (` τ ⊎ σ) < w > → (x : Id) → (x ⦂ τ < w > ∷ Γ) ⊢ υ < w >
+                       → (y : Id) → (y ⦂ σ < w > ∷ Γ) ⊢ υ < w > → Γ ⊢ υ < w >
+  \end{code}
+
+  Then we define terms for the product type |`_×_|, which corresponds to the
+  logical connective $\land$, and the sum type |`_⊎_|, which corresponds to the
+  logical connective $\lor$. We define introduction and elimination terms for
+  both.
+
+  \begin{code}
+    `hold : ∀ {τ w w'} → Γ ⊢ ↓ τ < w' > → Γ ⊢ ↓ (` τ at w') < w >
+    `leta_`=_`in_ : ∀ {τ σ w w'} → (x : Id) → Γ ⊢ (` τ at w') < w > → ((x ⦂ τ < w' >) ∷ Γ) ⊢ σ < w > → Γ ⊢ σ < w >
+    `sham : ∀ {w} {A : World → Type} → ((ω : World) → Γ ⊢ ↓ (A ω) < ω >) → Γ ⊢ ↓ `⌘ A < w >
+    `letsham_`=_`in_ : ∀ {σ w} {A : World → Type} → (u : Id) → Γ ⊢ `⌘ A < w >
+                     → (u ∼ A ∷ Γ) ⊢ σ < w > → Γ ⊢ σ < w >
+    `put : ∀ {τ σ w} {m : τ mobile} (u : Id) → Γ ⊢ τ < w > → ((u ∼ (λ _ → τ)) ∷ Γ) ⊢ σ < w > → Γ ⊢ σ < w >
+  \end{code}
+
+  We define introduction and elimination terms for the |at| and $\shamrock$
+  connectives we defined in \autoref{sssec:hybrid} and
+  \autoref{sssec:validity}. Our terms here are direct formalizations of the
+  inference rules $|at|_i, |at|_e, \shamrock_i, \shamrock_e, |put|$ respectively,
+  defined in \autoref{fig:l5term} and \autoref{fig:l5shamrock}.
+
+  \begin{code}
+    `Λ : ∀ {w} {A : World → Type} → ((ω : World) → Γ ⊢ ↓ A ω < w >) → Γ ⊢ ↓ `∀ A < w >
+    _⟨_⟩ : ∀ {w} {A : World → Type} → Γ ⊢ `∀ A < w > → (ω : World) → Γ ⊢ (A ω) < w >
+    `wpair : ∀ {w} {A : World → Type} (ω : World) → Γ ⊢ ↓ A ω < w > → Γ ⊢ ↓ `∃ A < w >
+    `unpack_`=_`in_ : ∀ {w τ} {A : World → Type} (x : Id) → Γ ⊢ `∃ A < w >
+                    → ((ω : World) → ((x ⦂ A ω < w >) ∷ Γ) ⊢ τ < w >) → Γ ⊢ τ < w >
+  \end{code}
+
+  We define introduction and elimination terms for the $\forall$ and $\exists$
+  connectives we defined in \autoref{sssec:hybrid}.  Our terms are direct
+  formalizations of the inference rules $\forall_i ,\forall_e, \exists_i,
+  \exists_e$, respectively, defined in \autoref{fig:l5term}.
+
+  \begin{code}
+    `get : ∀ {τ w w'} {m : τ mobile} → Γ ⊢ τ < w' > → Γ ⊢ τ < w >
+    `val : ∀ {τ w} → Γ ⊢ ↓ τ < w > → Γ ⊢ τ < w >
+    `prim_`in_ : ∀ {h w σ} (x : Prim h) → (h ∷ Γ) ⊢ σ < w > → Γ ⊢ σ < w >
+  \end{code}
+
+  We define the most important term in ML5, |get|, in order to move a mobile
+  expression from one world to another. It is a term after the inference rule
+  we defined in \autoref{fig:l5get}. |get| will often be an interesting case
+  during our type-directed conversions; keeping an eye out for it will help us
+  understand the compiler better.
+
+  We define the term |val| to inject values into expressions.\cite{monadic}
+  Since an expression is a term that potentially requires communication, a
+  value can also be an expression.
+
+  We define an expression to generalize primitive functions we will have in our
+  language. We will define a type |Prim : Hyp → Set| that will contain all of
+  our primitives, instead of adding new terms to the type |_⊢_|. We will not go over the primitive much throughout the conversion, but our |Prim| type in ML5 is as follows:
+
+  \begin{code}
+  data Prim : Hyp → Set where
+    `alert : Prim ("alert" ⦂ ` `String ⇒ `Unit  < client >)
+    `write : Prim ("write" ⦂ ` `String ⇒ `Unit  < client >)
+    `version : Prim ("version" ⦂ `String < server > )
+    `log : Prim ("log" ∼ (λ _ → ` `String ⇒ `Unit))
+    `prompt : Prim ("prompt" ⦂ ` `String ⇒ `String < client >)
+    `readFile : Prim ("readFile" ⦂ ` `String ⇒ `String < server >)
+  \end{code}
+
+  Observe that having valid value primitives also makes sense in some cases such as |`log|, because logging to console makes sense in both client and server.
+
+  With that definition, we conclude the description of ML5.
+
   % }}}
 
   % CPS {{{
   \subsection{CPS}
+
+
 
   \begin{code}
   data Conc : Set where
@@ -1158,7 +1352,7 @@ monomorphization, and JavaScript.
   \end{enumerate}
 
   The other cases of these two functions consist of recursive calls, list
-  append equality proofs and calls to the subset lemma. The actual code is
+  append equality proofs and calls to the weakening lemma. The actual code is
   verbose and not very interesting for our purposes.
 
   % }}}
