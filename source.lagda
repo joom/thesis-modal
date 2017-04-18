@@ -108,9 +108,10 @@
   support and comradery throughout the years we did research and worked as
   course assistants, not to mention his endless supply of \textit{rakija}.
 
-  Finally, I would like to thank Pi, Emily, Cloie, Molly, Kivanc, Damlasu and
-  my family. I am thankful to the emotional support they provided by putting up
-  with me babbling about linguistics, religion, history and politics.
+  Finally, I would like to thank Pi, Emily, Cloie, Molly, Kivanc, Damlasu, Isin
+  Ekin, and my family. I am thankful to the emotional support they provided by
+  putting up with me babbling ceaselessly about linguistics, religion, history
+  and politics.
 
 \end{acknowledgements}
 
@@ -190,9 +191,12 @@ functional language. Therefore a type will also belong to a type. The type of
 types in Agda is called |Set|, which will come up often in this thesis.
 However, not every Agda type belong to the type |Set|. Since we will not use
 this distinction, we will omit the explanation. For more information, you can
-read about Girard's paradox. }
+read about Girard's paradox.\\A syntactic reminder about Agda is that it allows
+mixfix naming of variables. An underscore character in a name stands for an
+argument; in fact we will define the ternary operator |`if_`then_`else_| in
+ML5. }
 
-Our final program\footnote{The Agda source code is available here:
+Our final program\footnote{The Agda source code is available at
 \url{http://github.com/joom/modal}} consists of $\approx 3800$ lines of
 executable Agda code. It currently does not have a parser, so the code has to
 written in Agda, using the abstract syntax tree (AST) of ML5. However the task
@@ -792,11 +796,11 @@ we are generating code that is not meant to be read, we can overlook that
 problem.}, this process is necessary move us closer to JavaScript, our final
 target language. Then we eventually want to hoist all lambdas in a program to
 the top, so that we can call them by their names during network communication.
-However, this is not possible because these functions contain bound variables.
-That is why we create closures to get rid of the bound variables. Only after
-that we can hoist the functions, i.e.\ lambda lifting. Finally, before
-conversion to JavaScript, we have to monomorphize valid values into values in
-specific worlds.
+However, this is not possible because these functions contain bound variables
+from previous definitions.  That is why we create closures to get rid of these
+bound variables. Only after that we can hoist the functions, i.e.\ lambda
+lifting. Finally, before conversion to JavaScript, we have to monomorphize
+valid values into values in specific worlds.
 
 % }}}
 
@@ -994,14 +998,25 @@ specific worlds.
 
   Observe that having valid value primitives also makes sense in some cases such as |`log|, because logging to console makes sense in both client and server.
 
-  With that definition, we conclude the description of ML5.
+  With that, we conclude the definition of ML5.
 
   % }}}
 
   % CPS {{{
   \subsection{CPS}
 
+  % CPS intro {{{
 
+  Currently we have an ML5 program whose control flow is unspecified. We need a
+  language that can represent the entire control and data flow
+  explicitly.\cite{appel} We will achieve this by representing the control
+  stack in a function that will be called the continuation function
+  |K|.\cite{regexp2016} The idea behind a continuation function is not far from
+  a JavaScript callback; both are functions that are called when a certain
+  computation is completed.  Since nothing is returned and the rest of the
+  computation happens through the continuation function, our resulting program
+  in CPS will be an expression without a type, we will call this a continuation
+  expression, |⋆|.
 
   \begin{code}
   data Conc : Set where
@@ -1009,12 +1024,26 @@ specific worlds.
     ↓_<_> : (τ : Type) (w : World) → Conc
   \end{code}
 
+  In the CPS language, we have a different conclusion judgments. |⋆<_>| is the
+  continuation expression that denotes a computation that calls the
+  continuation function inside. On the other hand, our value judgment |↓_<_>|
+  remains the same.
+
   We will also replace the function type |`_⇒_| with an alternative that
   respects the continuations.
 
   \begin{code}
     `_cont : Type → Type
   \end{code}
+
+  As we mentioned above, expression evaluation does not return anything
+  anymore, it rather calls a continuation function with the computed value. In
+  that case, a function does not have a return type; it only has an argument
+  type.
+
+  The value terms in ML5 stay the same in the CPS language, however the
+  expressions all have to become continuation expressions. Let's go over the
+  new terms in our language.
 
   \begin{code}
     `if_`then_`else_ : ∀ {w} → Γ ⊢ ↓ `Bool < w >
@@ -1026,7 +1055,19 @@ specific worlds.
                            → ((x ⦂ τ < w >) ∷ Γ) ⊢ ⋆< w >
                            → ((y ⦂ σ < w >) ∷ Γ) ⊢ ⋆< w >
                            → Γ ⊢ ⋆< w >
+    `let_`=fst_`in_ : ∀ {τ σ w} → (x : Id)
+        → Γ ⊢ ↓ (` τ × σ) < w >
+        → ((x ⦂ τ < w >) ∷ Γ) ⊢ ⋆< w >
+        → Γ ⊢ ⋆< w >
+    `let_`=snd_`in_ : ∀ {τ σ w} → (x : Id)
+        → Γ ⊢ ↓ (` τ × σ) < w >
+        → ((x ⦂ σ < w >) ∷ Γ) ⊢ ⋆< w >
+        → Γ ⊢ ⋆< w >
   \end{code}
+
+  The conditional expression and the elimination terms of |`_⊎_| and |`_×_|
+  become continuation expressions. All expressions in the corresponding terms
+  in ML5 are now |⋆< w >| continuation expressions.
 
   \begin{code}
     `leta_`=_`in_ : ∀ {τ w w'} → (x : Id)
@@ -1041,20 +1082,6 @@ specific worlds.
         → Γ ⊢ ↓ τ < w >
         → ((u ∼ (λ _ → τ)) ∷ Γ) ⊢ ⋆< w >
         → Γ ⊢ ⋆< w >
-  \end{code}
-
-  \begin{code}
-    `let_`=fst_`in_ : ∀ {τ σ w} → (x : Id)
-        → Γ ⊢ ↓ (` τ × σ) < w >
-        → ((x ⦂ τ < w >) ∷ Γ) ⊢ ⋆< w >
-        → Γ ⊢ ⋆< w >
-    `let_`=snd_`in_ : ∀ {τ σ w} → (x : Id)
-        → Γ ⊢ ↓ (` τ × σ) < w >
-        → ((x ⦂ σ < w >) ∷ Γ) ⊢ ⋆< w >
-        → Γ ⊢ ⋆< w >
-  \end{code}
-
-  \begin{code}
     `let_`=_⟨_⟩`in_ : ∀ {C w} → (x : Id)
         → Γ ⊢ ↓ `∀ C < w >
         → (w' : World)
@@ -1067,14 +1094,67 @@ specific worlds.
         → Γ ⊢ ⋆< w >
   \end{code}
 
+  Similarly, |`put| and the elimination terms of |at|, $\shamrock$, $\forall$
+  and $\exists$ become continuation expressions. All expressions in the
+  corresponding terms in ML5 are now |⋆< w >| continuation expressions, but
+  their contexts remain the same.
+
   \begin{code}
     `go[_]_ : ∀ {w} → (w' : World) → Γ ⊢ ⋆< w' > → Γ ⊢ ⋆< w >
+    `prim_`in_ : ∀ {h w} → (x : Prim h) → (h ∷ Γ) ⊢ ⋆< w > → Γ ⊢ ⋆< w >
     `call : ∀ {τ w} → Γ ⊢ ↓ ` τ cont < w > → Γ ⊢ ↓ τ < w > → Γ ⊢ ⋆< w >
     `halt : ∀ {w} → Γ ⊢ ⋆< w >
-    `prim_`in_ : ∀ {h w} → (x : Prim h) → (h ∷ Γ) ⊢ ⋆< w > → Γ ⊢ ⋆< w >
   \end{code}
 
+  Observe that our definition of |`go| differs from its counterpart |`get| in
+  the sense that it does not require mobility, because our expressions no
+  longer have a type that we can check for mobility.
+  Our definition of primitives remain the same except the judgment
+  change. However, notice that function calls are different especially because
+  the function type |`_⇒_| in ML5 does not exist in the CPS language; it is
+  replaced by |`_cont|. We also define a new term is |`halt|, which will be
+  used in the initial continuation function, as marker for the end of the
+  control stack.
+
+  This concludes our definition of the CPS language, but before we move on to
+  the conversion process, let's state weakening lemmas for values and
+  continuation expressions:
+
+  \begin{code}
+    ⊆-term-lemma : ∀ {Γ Γ' τ w} → Γ ⊆ Γ' → Γ ⊢ ↓ τ < w > → Γ' ⊢ ↓ τ < w >
+    ⊆-cont-lemma : ∀ {Γ Γ' w} → Γ ⊆ Γ' → Γ ⊢ ⋆< w > → Γ' ⊢ ⋆< w >
+  \end{code}
+
+  Both proofs are simple inductions.
+
+  % }}}
+
+  % CPS conversion {{{
   \subsubsection{Conversion from ML5 to CPS}
+  \label{sssec:tocps}
+
+  During conversion from ML5 to CPS, our initial idea is that each type in ML5 will correspond to another in the CPS language. We define a function to convert ML5 types to CPS types.
+
+  \begin{code}
+  convertType : Type₅ → Typeₓ
+  convertType `Int = `Int
+  convertType `Bool = `Bool
+  convertType `Unit = `Unit
+  convertType `String = `String
+  convertType (` τ × σ) = ` (convertType τ) × (convertType σ)
+  convertType (` τ ⊎ σ) = ` (convertType τ) ⊎ (convertType σ)
+  convertType (` τ at w) = ` (convertType τ) at w
+  convertType (`⌘ C) = `⌘ (λ ω → convertType (C ω))
+  convertType (`∀ C) = `∀ (λ ω → convertType (C ω))
+  convertType (`∃ C) = `∃ (λ ω → convertType (C ω))
+  convertType (` τ ⇒ σ) = ` (` (convertType τ) × (` convertType σ cont)) cont
+  \end{code}
+
+  This seems like a simple induction except the last case, in which a function
+  is converted into a continuation term that takes a pair of an argument and a
+  callback function for when the return value is ready. We describe the
+  conversion of the lambda term in \hyperref[par:cpsInteresting]{the
+  interesting conversion cases}.
 
   To convert ML5 to JavaScript, we need one function to convert the value type,
   and another one to convert the star expressions.
@@ -1088,6 +1168,20 @@ specific worlds.
               → Γ ⊢₅ τ < w >
               → (convertCtx Γ) ⊢ₓ ⋆< w >
   \end{code}
+
+  The first conversion function's type tells us that a value in ML5 can be
+  converted into a value in the CPS language.  The second conversion function's
+  type tells us that if we have an expression in ML5, and if we have a
+  continuation function |K| that tells us what to do when the expression is
+  evaluated, we can convert the ML5 expression to CPS continuation expression
+  |⋆< w >|.\footnote{We are using the word ``continuation'' for three concepts,
+  so we must be able to distinguish between them before getting into the
+  conversion process. The first usage is a continuation expression, |⋆< w >|.
+  It corresponds to the expressions in ML5 and it does not have a type for the
+  reasons stated above. The second usage is continuation type, |`_cont|, the
+  replacement of functions in the CPS language. The third usage is continuation
+  function, often named |K|. This is an Agda-level function, i.e.\ a function
+  in the meta language. }
 
   It turns out that defining this function with a direct induction on the
   values and expressions is not straightforward. Therefore, we slightly alter
@@ -1152,6 +1246,10 @@ specific worlds.
 
 
   \paragraph{Interesting cases}
+  \phantomsection
+  \label{par:cpsInteresting}
+
+  Now we want to handle the conversion cases that actually are of substance.
 
   \begin{code}
     convertValue' {s = s} (`λ x ⦂ σ ⇒ t) =
@@ -1163,11 +1261,31 @@ specific worlds.
                    `in (`call (`v (x ++ "_k") (here refl)) (⊆-term-lemma there v))) t)
   \end{code}
 
+  The first and most prominent case we have to handle is the conversion of
+  lambdas. In the definition of |convertType| we have seen that a function type
+  is converted to a continuation type that takes a pair consisting of the
+  original argument type and a callback function that takes the return type.
+  Therefore the term we are converting is a lambda that gives new names to the
+  both elements of the pair it takes as an argument, and calls the second part,
+  which is a callback function, with the first part, which is the initial
+  argument. Notice that the first projection of the pair and the second
+  projection have different contexts, because when the second projection
+  happens the first one is already in the context. Because of this, in order to
+  use the two values together in the same function call, we have to weaken the
+  first projection, i.e.\ to prove that it is still valid under a greater
+  context.
+
   \begin{code}
     convertExpr' {s = s} K (` t · u) =
       convertExpr' {s = s} (λ {_}{s'} v → convertExpr' {s = s' ∘ s}
         (λ {_}{s''} v' → `call (⊆-term-lemma s'' v) (` v' , (`λ "x" ⦂ _ ⇒ K {s' = there ∘ s'' ∘ s'} (`v "x" (here refl))))) u) t
   \end{code}
+
+  Since we changed lambda terms so much, we also have to adjust function calls
+  accordingly. What was once a lambda function in ML5 is now a function that
+  takes a pair of the initial argument and a callback function. Therefore
+  during a function call, we should pass a pair of those. The question of what
+  the callback function will do is solved by the continuation function |K|.
 
   \begin{code}
     convertExpr' {w = w}{s = s} K (`get {w' = w'}{m = m} t) =
@@ -1175,10 +1293,33 @@ specific worlds.
           `put_`=_`in_ {m = convertMobile m} "u" v (`go[ w  ] (K {s' = there ∘ s'} (`vval "u" (here refl))))) t)
   \end{code}
 
+  We mentioned that |`go| does not contain the notion of mobility, unlike
+  |`get| in ML5. Therefore we need another way of preserving the mobility data
+  we inherit from the |`get| constructor. The only other expression that uses
+  mobility is |put|, hence we have to use that to ensure mobility. We convert a
+  |`get| to three steps: going to the other world, putting the valid mobile
+  value into the context and then going back to the previous world and using
+  the valid value.
+
+  This concludes the conversion of ML5 to the CPS language.
+
+  % }}}
+
   % }}}
 
   % Closure {{{
   \subsection{Closure}
+
+  Our next goal is to hoist all lambdas in a program to the top, so that we
+  would have names for them, which allows us to use them when we are moving
+  data between the client and the server.  Doing this without taking any
+  precautions about bound variables will be disastrous, therefore we first have
+  to convert bound variables to a construct that we can make sure that they
+  will never become free variables.  We do this by creating environment objects
+  before functions and storing them so that later we can refer to the
+  environment objects for the variables that used to depend on a previous
+  definition. We call the combination of the environment object and the lambda,
+  a closure.
 
   Closure language will have two more types different from the CPS language.
 
@@ -1186,6 +1327,11 @@ specific worlds.
     `Env : List Hyp → Type
     `Σt[t×[_×t]cont] : Type → Type
   \end{code}
+
+  The first type will be used for the environment objects we described above,
+  and the second type is a hardcoded existential pair we will use to create
+  closures, a combination, i.e.\ pair, of the environment object and the
+  function.
 
   Let's start by adding the terms to use the recently introduced type |`Env|.
 
@@ -1216,8 +1362,22 @@ specific worlds.
                          → Γ ⊢ ⋆< w >
   \end{code}
 
+  That concludes the definition of our closure language. We also define and
+  prove weakening lemmas for continuation expressions and values, with the
+  names |⊆-cont-lemma| and |⊆-term-lemma| respectively.
 
   \subsubsection{Conversion from CPS to the closure conversion language}
+
+  Similar to the CPS conversion, our closure conversion also requires the
+  change of all the types through a function |convertType|.  Most of its
+  definition is the same kind of induction we have seen in
+  \autoref{sssec:tocps}. The only interesting case is the conversion of
+  |`_cont|, a continuation type becomes an existential pair of the environment
+  object and another continuation type.
+
+  \begin{code}
+  convertType ` τ cont = `Σt[t×[ convertType τ ×t]cont]
+  \end{code}
 
   We need a conversion function for values and one for continuations, with the
   following types.
@@ -1227,6 +1387,8 @@ specific worlds.
     convertCont : ∀ {Γ w} → Γ ⊢ₓ ⋆< w > → (convertCtx Γ) ⊢ₒ ⋆< w >
   \end{code}
 
+  Similar to our previous conversion, closure conversion also looks the the
+  direct conversion of contexts and types of the values.
 
   \begin{code}
     convertValue {Γ}{_}{w} (`λ x ⦂ σ ⇒ t) = `packΣ (`Env (convertCtx Γ)) (` `buildEnv id , (`λ "p" ⦂ _ ⇒ c))
@@ -1238,8 +1400,20 @@ specific worlds.
         c = `let "env" `=snd `v "p" (here refl) `in
             `open `v "env" (here refl) `in
             `let x `=fst `v "p" (++ʳ (convertCtx Γ) (there (here refl))) `in
-            (Closure.Terms.⊆-cont-lemma (sub-lemma ++ˡ) t')
+            (⊆-cont-lemma (sub-lemma ++ˡ) t')
   \end{code}
+
+  Lambda function is our most essential case in closure conversion. Each
+  function is turned into an existential pair using |`packΣ|, packing the
+  current environment and a new lambda function together. The new function
+  takes a pair of the initial argument and the environment we just built.  We
+  expand the function body with expressions to name the environment object,
+  initial argument, and to open up the environment object in the local context.
+  This way we show that the resulting lambda function is a closed term.
+
+  Notice that the term |t'| will be too strong to fit in the last step of our
+  definition, because we defined variables and opened an environment. We have
+  to weaken |t'| to be able to use it in that spot.
 
   \begin{code}
     convertCont {Γ} (`call t u) =
@@ -1247,17 +1421,37 @@ specific worlds.
       `let "e" `=fst `v "p" (here refl) `in
       `let "f" `=snd `v "p" (there (here refl)) `in
       `call (`v "f" (here refl))
-            (` Closure.Terms.⊆-term-lemma (there ∘ there ∘ there) (convertValue u) , `v "e" (there (here refl)))
+            (` ⊆-term-lemma (there ∘ there ∘ there) (convertValue u) , `v "e" (there (here refl)))
   \end{code}
 
+  Like CPS conversion, changing the lambda functions requires us to adjust the
+  function applications as well. Since |convertValue t| is an existential pair,
+  we have to unpack it into an environment and a function. Then we call the
+  function with the pair of the initial argument and the environment we just
+  unpacked in the previous step.
+
+  Notice that |convertValue u| is too strong for the pair that is the argument
+  to the function, because we unpacked an existential pair and also did first
+  and second named projections of a pair. Therefore we have to weaken it to
+  make it fit the type requirements.
+
   \begin{code}
-    convertCont (`go[ w' ] u) = `go-cc[ w' ] "" (convertValue (`λ "y" ⦂ `Unit ⇒ CPS.Terms.⊆-cont-lemma there u ))
+    convertCont (`go[ w' ] u) =
+      `go-cc[ w' ] "" (convertValue (`λ "y" ⦂ `Unit ⇒ CPS.Terms.⊆-cont-lemma there u ))
   \end{code}
+
+  Now we are moving the term |u|, which is in the world |w'|, into a lambda
+  function, and then applying the lambda conversion process we defined above.
+  This will allow us to hoist it in the next step, so that we can refer to it
+  by its name. The empty string is planned as a placeholder for the name we
+  will assign in lambda lifting in \autoref{ssec:lifting}. Since we are adding
+  a new variable |"y"| to the environment, we have to weaken the expression |u|.
 
   % }}}
 
   % Lambda lifting {{{
   \subsection{Lambda lifting}
+  \label{ssec:lifting}
   Our goal with closure conversion was that we would be able to move the lambda
   terms as we like. We want to move all of them to the beginning so that we can
   give them names and refer to them with their specific names later. This will
