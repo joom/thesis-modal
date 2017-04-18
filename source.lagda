@@ -96,7 +96,7 @@
   First and foremost, I would like to thank Dan Licata, my research advisor.
   He is the primary reason that I had an opportunity to get into computer
   science research, and I am immensely grateful for his patience and humility
-  throughout the years that we worked together.  Every undeserved "Good work!"
+  throughout the years that we worked together.  Every undeserved ``Good work!''
   I got from him was a great source of motivation for me.
 
   The amazing computer science classes I have taken with James Lipton, Norman
@@ -1595,6 +1595,10 @@ valid values into values in specific worlds.
   Also for each primitive that is a valid value, such as logging, we define two
   primitives, one copy for client and another for server.
 
+  That concludes the definition of our monomorphic language. We also define and
+  prove weakening lemmas for continuation expressions and values, with the
+  names |⊆-cont-lemma| and |⊆-term-lemma| respectively.
+
   \subsubsection{Monomorphization}
 
   Even though defining the terms that are different in the |LiftedMonomorphic|
@@ -1675,6 +1679,7 @@ valid values into values in specific worlds.
 % Formalization of JavaScript {{{
 
 \section{Formalization of JavaScript}
+\label{sec:jsformalization}
 
 % JS formalization intro {{{
 
@@ -1769,6 +1774,7 @@ Now we can move on to the actual definitions of these notions.
 
 % Statements {{{
 \subsection{Statements}
+\label{ssec:statements}
 
 We explained above that defining things in the global namespace is considered
 bad practice, and therefore we planned to place all of the code in an anonymous
@@ -1787,6 +1793,7 @@ data Stm_<_> : Context → World → Set where
 
 % Function Statements {{{
 \subsection{Function Statements}
+\label{ssec:fnstm}
 
 Now let's define rules for statements that are allowed in function definitions.
 
@@ -1887,6 +1894,7 @@ client and server. We will go in detail about them in \autoref{sec:tojs}.
 
 % Expressions {{{
 \subsection{Expressions}
+\label{ssec:expressions}
 
 Now let's define the notion of expressions, starting with the simple ones.
 
@@ -2038,6 +2046,16 @@ example \lstinline{JSON.stringify(\{"a": undefined\})} returns
 
 % }}}
 
+That concludes our formalization of JavaScript. Before we move on, we state and define weakening lemmas for all three types we defined above.
+
+\begin{code}
+  ⊆-stm-lemma : ∀ {Γ Γ' w} → Γ ⊆ Γ' → Stm Γ < w > → Stm Γ' < w >
+  ⊆-fnstm-lemma : ∀ {Γ Γ' γ mσ w} → Γ ⊆ Γ' → FnStm Γ ⇓ γ ⦂ mσ < w > → FnStm Γ' ⇓ γ ⦂ mσ < w >
+  ⊆-exp-lemma : ∀ {Γ Γ' τ w} → Γ ⊆ Γ' → Γ ⊢ τ < w > → Γ' ⊢ τ < w >
+\end{code}
+
+Their definitions are simple inductions.
+
 % }}}
 
 % Conversion to JavaScript {{{
@@ -2045,8 +2063,19 @@ example \lstinline{JSON.stringify(\{"a": undefined\})} returns
 \section{Conversion to JavaScript}
 \label{sec:tojs}
 
-The $\lambda$-lifted monomorphic language gives us a list of lambda terms and a
-term standing by itself that refers to those lambda terms.
+% Types of functions {{{
+
+Now that we defined a very strict subset of JavaScript, we will generate
+JavaScript code from our last language.
+
+Before our last step, the structure of a program looks like this: The lambda
+lifted monomorphic language gives us a list of closed lambda terms and a term
+standing by itself that refers to those lambda terms. What we want to generate
+from this initially is a JavaScript statement for the client and the server.
+If we remember statements from \autoref{ssec:statements}, they can represent an
+entire program on their own, by holding an immediately called anonymous
+function that contains the program. The overall function that converts the
+program from the lifted monomorphic language to JavaScript is as follows:
 
 \begin{code}
 entryPoint : ∀ {w}
@@ -2054,25 +2083,134 @@ entryPoint : ∀ {w}
                 (λ newbindings → All (λ { (_ , σ , w') → [] ⊢ᵐ ↓ σ < w' > }) newbindings
                                × (LiftedMonomorphic.Types.toCtx newbindings) ⊢ᵐ ⋆< w >)
             → (Stm [] < client >) × (Stm [] < server >)
+entryPoint (xs , all , t) with convertλs all
+... | (Γ' , Δ') , (cliFnStmLifted , s) , (serFnStmLifted , s')
+  with convertCont {toCtx xs}{Γ' +++ []}{Δ' +++ []}{s = ++ˡ ∘ s}{s' = ++ˡ ∘ s'} _ t
+... | (δ , cliFnStm) , (φ , serFnStm) =
+      `exp ((` `λ [] ⇒ (cliFnStmLifted ； cliFnStm ；return `undefined) · []))
+    , `exp ((` `λ [] ⇒ (serFnStmLifted ； serFnStm ；return `undefined) · []))
 \end{code}
 
+We already explained the type of this function, but what about its definition?
+The pattern matching |(xs , all , t)| represents our program: |xs| is the list
+of triples that denote the lifted lambdas, |all| is the proof using the |All|
+data type that those triples correspond to actual lambda terms, and |t| is the
+remaining program.
+
+We pass |all| to another function |convertλs| in order to convert the lifted
+terms to a single function statement that consist of the converted JavaScript
+function declared with the proper name. Then we call |convertCont| with the
+remaining continuation expression |t|, and this provides us everything we need
+for the overall conversion. We call the only constructor of statements, |`exp|
+and pass it an anonymous function as we described in
+\autoref{sec:jsformalization}.
+
+Before stating the types of |convertλ| and |convertλs|, we have to define the
+function |only| that we will often use in our conversion function types in
+order to limit the JavaScript contexts in our conversions to a single world.
+
+\begin{code}
+  onlyCliCtx : Context → Context
+  onlyCliCtx [] = []
+  onlyCliCtx ((x ⦂ τ < client >) ∷ xs) = (x ⦂ τ < client >) ∷ onlyCliCtx xs
+  onlyCliCtx ((x ⦂ τ < server >) ∷ xs) = onlyCliCtx xs
+
+  onlySerCtx : Context → Context
+  onlySerCtx [] = []
+  onlySerCtx ((x ⦂ τ < server >) ∷ xs) = (x ⦂ τ < server >) ∷ onlySerCtx xs
+  onlySerCtx ((x ⦂ τ < client >) ∷ xs) = onlySerCtx xs
+
+  only : World → Context → Context
+  only client xs = onlyCliCtx xs
+  only server xs = onlySerCtx xs
+\end{code}
+
+Clearly |onlyCliCtx| removes any non-client variable from a given context, and
+|onlySerCtx| removes any non-server variable from a context.
+
+Using these definitions, let's state |convertλ| and |convertλs| to understand
+|entryPoint| better.
+
+\begin{code}
+  convertλ : (id : Id) (τ : Typeᵐ) (w : World) → [] ⊢ᵐ ↓ τ < w >
+           → FnStm [] ⇓ ((id ⦂ convertType τ < w >) ∷ []) ⦂ nothing < w >
+             × Σ _ (λ Γ → FnStm [] ⇓ Γ ⦂ nothing < client >)
+             × Σ _ (λ Δ → FnStm [] ⇓ Δ ⦂ nothing < server >)
+  convertλs : ∀ {xs} → All (λ { (_ , σ , w') → [] ⊢ᵐ ↓ σ < w' > }) xs
+            → Σ _ (λ { (Γ , Δ) → (FnStm [] ⇓ Γ ⦂ nothing < client > × only client (convertCtx (toCtx xs)) ⊆ Γ)
+                                 × (FnStm [] ⇓ Δ ⦂ nothing < server > × only server (convertCtx (toCtx xs)) ⊆ Δ) })
+\end{code}
+
+We will not go over their definitions, but their types are the key to
+understand the overall structure of our programs. Since the lambda lifted
+functions are closed terms, we can say that |convertλ| takes a closed term |[]
+⊢ᵐ ↓ τ < w >| and returns a triple that consists of an assignment function
+statement for the lambda it just converted, and two pairs of possible
+extensions of the context with function statements. The reason we need them is
+network communication. In the client and the server, we might need to add new
+definitions or make primitive function call for network communication purposes,
+and we do not know what might need to be added to the context for that so we
+use |Σ| pairs.  If we only had |FnStm [] ⇓ ((id ⦂ convertType τ < w >) ∷ []) ⦂
+nothing < w >| as the resulting JavaScript term, that would be very limiting
+for cases like that.
+
+Similarly, we define a function |convertλs|, that takes an |All| list of those
+closed lambda terms, converts them all to function statements using |convertλ|,
+and then accumulates the resulting function statements as a single entity.
+Notice that the function statements are in a |Σ| pair, which means that we
+cannot guess what their resulting contexts will be. However, there is a
+property about their resulting contexts that we can prove.  Since each lifted
+function in |xs| will be declared in the corresponding world, we can show that
+for all lifted functions, if a function is lifted, then there is an assignment
+in the same world in JavaScript to the same name with the converted type of the
+lifted function. In our types, this is shown as |only client (convertCtx (toCtx
+xs)) ⊆ Γ| and |only server (convertCtx (toCtx xs)) ⊆ Δ)|.
+
+Now that we dealt with the conversion of the lifted functions, we should define
+conversion functions for continuation expressions and values in the lifted
+monomorphic language.
 
 \begin{code}
     convertCont : ∀ {Γ Δ Φ}
-                → {s : only client (convertCtx Γ) ⊆ Δ}
-                → {s' : only server (convertCtx Γ) ⊆ Φ}
+                → {s : only client (convertCtx Γ) ⊆ Δ} → {s' : only server (convertCtx Γ) ⊆ Φ}
                 → (w : World)
                 → Γ ⊢ᵐ ⋆< w >
                 → Σ _ (λ δ → FnStm Δ ⇓ δ ⦂ nothing < client >)
                   × Σ _ (λ φ → FnStm Φ ⇓ φ ⦂ nothing < server >)
     convertValue : ∀ {Γ Δ Φ τ w}
-                 → {s : only client (convertCtx Γ) ⊆ Δ}
-                 → {s' : only server (convertCtx Γ) ⊆ Φ}
+                 → {s : only client (convertCtx Γ) ⊆ Δ} → {s' : only server (convertCtx Γ) ⊆ Φ}
                  → Γ ⊢ᵐ ↓ τ < w >
                  → (only w (convertCtx Γ)) ⊢ⱼ (convertType {w} τ) < w >
                    × Σ _ (λ δ → FnStm Δ ⇓ δ ⦂ nothing < client >)
                    × Σ _ (λ φ → FnStm Φ ⇓ φ ⦂ nothing < server >)
 \end{code}
+
+These types might look cryptic at the moment, so let's go step by step. Our
+first function |convertCont| converts a continuation expression into two pairs
+containing function statements and their resulting contexts.  However, it also
+guarantees that when we convert |Γ|, the context of the initial continuation
+expression, and take the hypotheses in a specific world using |only|, that
+should be a subset of the context of the function statement in the same world.
+
+|convertValue|'s type is slightly more cryptic. We still have the same subset
+condition, but we also have a type for the value. The context of the
+monomorphic value, |Γ| is related to the context of the resulting value in the
+same way. Since we only want contexts that contain variables from a single
+world, we say that the context of the resulting value should be the converted
+context filtered in favor of the world we are in. This can be stated as |only w
+(convertCtx Γ)| in our formalization. A possible question is why we need
+function statements in the client and the server when we have a converted
+value. The answer to that question is that some values contain continuation
+expressions in them, such as lambda functions. When we compile lambda
+functions, we want to make sure that we can generate the necessary network
+communication code at the same time. One converted expression is not enough to
+handle all of that, ergo we need to be able to generate function statements as
+well.
+
+% }}}
+
+Now that we have a better idea of the big picture, let's get into the specifics
+of this conversion.
 
 \begin{code}
     convertCont {Γ}{Δ}{Φ}{s = s}{s' = s'} client (`if t `then u `else v)
@@ -2098,9 +2236,9 @@ entryPoint : ∀ {w}
 
 % }}}
 
-% Conclusion {{{
+% Related Work and Conclusion {{{
 
-\section{Conclusion}
+\section{Related Work and Conclusion}
 
 % }}}
 
