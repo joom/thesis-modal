@@ -205,7 +205,7 @@ argument; in fact we will define the ternary conditional operator as
 
 Our final program\footnote{The Agda source code is available at
 \url{http://github.com/joom/modal}} consists of $\approx 3800$ lines of
-executable Agda code. It currently does not have a parser, so the code has to be
+executable Agda code. It currently does not have a parser, so the ML5 code has to be
 written in Agda, using the abstract syntax tree (AST) of ML5. However the task
 is not as daunting as it sounds, because of the mixfix variable naming in Agda,
 a program written in the AST does not look that different from any other
@@ -213,9 +213,22 @@ function language. For example, a simple program that alerts a string on the
 browser looks like this:
 
 \begin{code}
-  program : [] ⊢₅ `Unit < client >
-  program = `prim `alert `in (` `val (`v "alert" (here refl)) · `val (`string "hello world"))
+  program1 : [] ⊢₅ `Unit < client >
+  program1 = `prim `alert `in
+            (` `val (`v "alert" (here refl)) · `val (`string "hello world"))
 \end{code}
+
+A more complex program, that prompts the user to enter a string, and then
+writes the input the screen looks like this:
+
+\begin{code}
+  program2 : [] ⊢₅ `Unit < client >
+  program2 = `prim `alert `in `prim `prompt `in
+            (` `val (`v "alert" (there (here refl))) · (` `val (`v "prompt" (here refl)) · `val (`string "Write something")))
+\end{code}
+
+Both of these programs actually compile to JavaScript and run successfully in
+browser.
 
 Starting from ML5, our compiler has 5 conversion steps: continuation-passing
 style, closure conversion, lambda lifting, monomorphization, and JavaScript.
@@ -2144,7 +2157,7 @@ any type we want. We will use this as a hacky solution for when there is a
 value for which we have to satisfy the type. Since we do not have a value
 \lstinline{null} or \lstinline{undefined} that fits any type\footnote{Our
 |`undefined| value has the value |`Undefined| so it is not a good candidate.
-This is a purposeful design decision.}, we need a way to get a filler value.
+This is an intentional design decision.}, we need a way to get a filler value.
 
 \begin{code}
   default : ∀ {Γ w} (τ : Type) → Γ ⊢ τ < w >
@@ -2699,7 +2712,7 @@ compileToJS = (clientWrapper *** serverWrapper)
 
 \section{Related work}
 
-In this thesis we have studied the possible use of modal logic and its proof
+We have studied the possible use of modal logic and its proof
 terms as a way to organize programs that require network communication between
 the client and the server in a web setting. As we mentioned throughtout the
 thesis, this is a spin-off of Murphy's dissertation\cite{tom7}, with the
@@ -2746,6 +2759,37 @@ such as Elm\cite{elm} and PureScript\footnote{\url{http://www.purescript.org/}}.
 
 \section{Conclusion}
 
+In this thesis we have defined a minimal modal logic based functional language
+called ML5 and implemented a compiler for it in Agda, and proved it static
+correctness. However, our language is so minimal that it is almost impossible
+to use it for a real task; it  must be extended to include recursive functions,
+data type declarations, lists, records and maybe even type
+inference.\cite{tapl} Without a doubt, this will make the verification of the
+language a much more dreadful task. One might even ask if we need to implement
+a practical compiler in a proof assistant, since it is unlikely that it will
+perform well. Despite its simplicity and the lack of the features listed above,
+our implementation of ML5 does not perform well. This is because at every step
+we numerously have to call lemmas that run induction through the entire term,
+namely weakening lemma. This is because we do the conversion and the static
+correctness proof at the same time, intrinsically. A compiler that runs through
+the steps using more efficient functions and proves static correctness
+extrinsically might be a better choice for a larger-scale practical
+compiler.\cite{regexp2016}
+
+By limiting Murphy's argument to solely client and server, we allowed ourselves
+to prove more properties about the conversion process itself. We attempted the
+formalization of the last step of conversion to JavaScript, which was not
+formalized by Murphy. Having a limited number of worlds was crucial in this
+step to specify that a the context of a JavaScript term in a specific world can
+only have variables in the same world. Even though we did not complete the
+compilation of |`go-cc| and the modal terms, our JavaScript formalization
+provides insight about how to prove the static correctness of those cases in
+the future.
+
+The goal of this thesis was to formalize the JavaScript code generation and
+implement the entire compiler in the Agda proof assistant. Since we have non
+trivial programs compiling and running properly, it is fair to say that we made
+a successful attempt to achieve both of these goals.
 
 % }}}
 
