@@ -224,7 +224,8 @@ writes the input the screen looks like this:
 \begin{code}
   program2 : [] ⊢₅ `Unit < client >
   program2 = `prim `alert `in `prim `prompt `in
-            (` `val (`v "alert" (there (here refl))) · (` `val (`v "prompt" (here refl)) · `val (`string "Write something")))
+            (` `val (`v "alert" (there (here refl))) ·
+              (` `val (`v "prompt" (here refl)) · `val (`string "Write something")))
 \end{code}
 
 Both of these programs actually compile to JavaScript and run successfully in

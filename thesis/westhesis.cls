@@ -184,7 +184,7 @@
 \topmargin 0pt
 \oddsidemargin=.5in
 \evensidemargin=\oddsidemargin
-\advance\headheight 75pt
+\advance\headheight 2pt
 \textwidth 5.75in
 \textheight 8.9in
 \advance\textheight by -\headheight
@@ -231,7 +231,7 @@
 \def\ps@chapsec{
   \gdef\ps@headings{
     \def\@oddhead{
-     \normalfont\scriptsize\rlap{\leftmark{}{}}\hfill\llap{\rightmark{}{}}
+      \normalfont\scriptsize\rlap{\leftmark{}{}}\hfill\llap{\rightmark{}{}}
     }
     \def\@oddfoot{
       \normalfont\scriptsize\rlap{\ttfamily\WT@showdraftfoot\hfill}%
