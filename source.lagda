@@ -6,11 +6,11 @@
 
   % Imports and Styling {{{
   \RequirePackage{amsmath}
-  \documentclass[11pt,final]{westhesis} % add "final" flag when finished
+  \documentclass[12pt,final]{westhesis} % add "final" flag when finished
   \def\textmu{}
 
   %include agda.fmt
-  \usepackage{natbib, fullpage, textgreek, bussproofs, epigraph, color, float,
+  \usepackage{natbib, textgreek, bussproofs, epigraph, color, float,
               enumerate, url, xcolor, graphicx, hyperref, listings, xfrac}
   \hypersetup{pdftex, backref = true, colorlinks = true, allcolors = {blue}}
   \setcounter{tocdepth}{4}
@@ -71,7 +71,7 @@
 
 % Title, Abstract, TOC etc. {{{
 
-\title{Verified Compilation of ML5 to JavaScript}
+\title{Thinking Outside the $\Box$: \\ Verified Compilation of ML5 to JavaScript}
 \author{Joomy Korkut}
 \advisor{Daniel R. Licata}
 \department{Mathematics and Computer Science}
@@ -108,10 +108,10 @@
   support and comradery throughout the years we did research and worked as
   course assistants, not to mention his endless supply of \textit{rakija}.
 
-  Finally, I would like to thank Pi, Emily, Cloie, Molly, Kivanc, Damlasu, Isin
-  Ekin, and my family. I am thankful to the emotional support they provided by
-  putting up with me babbling ceaselessly about linguistics, religion, history
-  and politics.
+  I am thankful to Pi, Emily, Molly, Kivanc, Damlasu, Isin Ekin, and my family
+  for the emotional support they provided by putting up with me babbling
+  ceaselessly about linguistics and politics. Finally, I would like to thank
+  Cloie for helping me find a logic pun for my thesis title.
 
 \end{acknowledgements}
 
@@ -124,12 +124,15 @@
   abstractions to organize local resources on different computers.  In this
   thesis, I limit his argument to simple web programming and claim that a modal
   logic based language provides a way to write readable code and correct web
-  applications.  To do this, I defined and implemented a minimal language
-  called ML5 in Agda and then wrote a compiler to JavaScript for it. The
-  compiler is a series of type directed translations through fully formalized
-  languages, the last one of which is a very limited subset of JavaScript.
-  As opposed to Murphy's compiler, this one compiles to JavaScript both on the
-  front end and back end through Node.js.
+  applications. To do this, I defined a minimal language called ML5 in the Agda
+  proof assistant and then implemented a compiler to JavaScript for it and
+  proved its static correctness. The compiler is a series of type directed
+  translations through fully formalized languages, the last one of which is a
+  very limited subset of JavaScript.  As opposed to Murphy's compiler, this one
+  compiles to JavaScript both on the front end and back end through Node.js.
+  Currently the last step of conversion to JavaScript is not entirely complete.
+  We have not specified the conversion rules for the modal types, and network
+  communication only has a partially working proof-of-concept.
 \end{abstract}
 
 \frontmatter
@@ -141,7 +144,8 @@
 \makeabstract
 \phantomsection
 \addcontentsline{toc}{section}{Table of Contents}
-{\small\tableofcontents}
+% {\small\tableofcontents}
+\tableofcontents
 \mainmatter
 % }}}
 
@@ -174,14 +178,17 @@ we now look for a basis for our language. Murphy's research shows us that a
 language that uses a modal type system can handle resources in a distributed
 program elegantly.\cite{tom7} This thesis will explore what happens when we
 restrict the distributed system to two computers: client, i.e.\ user of the web
-program, and server. Compilation process from our initial language, ML5, to
-JavaScript will be a series of simple type-directed conversions. Each step
-should will a specific purpose, and we should be able prove certain properties
-about the compilation at each step. Murphy's work goes over some these
-steps, but it prioritizes implementation over formalization, and does not go
-as deep into formalization as we will go in this thesis.
-
-In the formalization and compiler implementation, we are using the Agda proof
+program, and server. As opposed to Murphy's implementation of ML5, which is
+written in Standard ML, we will attempt to write the entire compiler in a proof
+assistant and prove the static correctness of each step.
+Compilation process from our initial language ML5 to JavaScript will be a
+series of simple type-directed conversions. Each step should have a specific
+purpose, and we should be able prove certain properties about the compilation
+at each step. Murphy's work goes over some these steps, but it prioritizes
+implementation over formalization on the last step of generating JavaScript.
+This thesis will attempt to formalize the last step as well. Moreover, Murphy's
+formalization of conversion steps are written in Twelf\cite{twelf}, while both
+our formalization and compiler implementation use the Agda proof
 assistant.\cite{norell} Agda is a dependently typed functional programming
 language with Haskell-like syntax, and this thesis will not go into detail
 about explaining the language.\footnote{Since we will not go into detail about
@@ -193,12 +200,12 @@ However, not every Agda type belong to the type |Set|. Since we will not use
 this distinction, we will omit the explanation. For more information, you can
 read about Girard's paradox.\\A syntactic reminder about Agda is that it allows
 mixfix naming of variables. An underscore character in a name stands for an
-argument; in fact we will define the ternary operator |`if_`then_`else_| in
-ML5. }
+argument; in fact we will define the ternary conditional operator as
+|`if_`then_`else_| in ML5. }
 
 Our final program\footnote{The Agda source code is available at
 \url{http://github.com/joom/modal}} consists of $\approx 3800$ lines of
-executable Agda code. It currently does not have a parser, so the code has to
+executable Agda code. It currently does not have a parser, so the code has to be
 written in Agda, using the abstract syntax tree (AST) of ML5. However the task
 is not as daunting as it sounds, because of the mixfix variable naming in Agda,
 a program written in the AST does not look that different from any other
@@ -215,7 +222,8 @@ style, closure conversion, lambda lifting, monomorphization, and JavaScript.
 Currently all the steps are entirely completed except the conversion from the
 monomorphic language to JavaScript. Currently conversions for base types and
 function calls work properly, and there is partially working network
-communication between the client and the server.
+communication between the client and the server. It is also worth noting that
+our verification only proves static correctness, not operational semantics.
 
 Now let's go over some aspects of modal logic, so that we can understand the
 modal type system we will use to organize our web programs.
@@ -272,7 +280,7 @@ modal type system we will use to organize our web programs.
 
   Modal logic is a broad field that includes various kinds of logic that deal
   with relational structures that have different perspectives of truth.
-  \cite{blackburn}\cite{tom7} For our purposes, we only want to examine
+  \cite{blackburn, tom7} For our purposes, we only want to examine
   intuitionistic modal logic with explicit worlds.
 
   We call these perspectives of truth, ``possible worlds''. Each world holds a
@@ -314,7 +322,7 @@ modal type system we will use to organize our web programs.
   In \autoref{fig:is5cup}, we state the axioms and inference rules of
   \isc\ for the connectives that are familiar from non-modal propositional
   logic, namely $\top, \bot, \land, \lor$ and $\supset$ (reads ``implies'',
-  $\Rightarrow$ is another notation for it).
+  $\Rightarrow$ is another notation for it), as presented by Murphy.\cite{tom7}
 
   \begin{figure}[ht]
     \caption{Axioms and inference rules of \isc.}
@@ -393,7 +401,8 @@ modal type system we will use to organize our web programs.
   $\Diamond$ should say ``all worlds accessible from the current one'', but
   since we are using \isc\ and all worlds are accessible from each other, we can
   directly say ``all worlds''.} The inference rules for $\Box$ and
-  $\Diamond$ are in \autoref{fig:is5cupBoxDiamond}.
+  $\Diamond$ are in \autoref{fig:is5cupBoxDiamond}, as presented by
+  Murphy.\cite{tom7}
 
   Notice that we are using $w$ and $w'$ for concrete world variables, while
   $\omega$ stands for a world that is universally quantified.
@@ -429,7 +438,7 @@ modal type system we will use to organize our web programs.
   % }}}
 
   % Hybrid logic {{{
-  \subsubsection{Hybrid Logic and Quantifiers}
+  \subsubsection{Hybrid logic and quantifiers}
   \label{sssec:hybrid}
 
   Even though $\Box$ and $\Diamond$ are introduced as modal connectives,
@@ -437,8 +446,9 @@ modal type system we will use to organize our web programs.
   is familiar with first-order logic, universal and existential quantifiers
   ($\forall$ and $\exists$) are more intuitive.
   For that reason, we will replace them with three different connectives:
-  $\forall, \exists$ and \texttt{at}.
-  The inference rules for them are presented in \autoref{fig:is5hybrid}.
+  $\forall, \exists$ and \texttt{at}. \cite{monadic, macedonio}
+  The inference rules for them are presented in \autoref{fig:is5hybrid}, as
+  presented by Murphy.\cite{tom7}
 
   $A\ \texttt{at}\ w$ is a proposition that is an internalization of the
   $\conc{A}{w}$ judgment, just like $A \supset B$ is an internalization
@@ -483,7 +493,8 @@ modal type system we will use to organize our web programs.
       \RightLabel{$\exists_i$} % exists intro
       \UnaryInfC{$\Gamma \vdash \conc{\exists \omega . A}{w}$}
       \DisplayProof
-      \hskip 1.5em
+    \end{center}\bigskip
+    \begin{center}
       \AxiomC{$\Gamma \vdash \conc{\exists \omega . A}{w'}$}
       \AxiomC{$\Gamma, \omega \text{ world}, \conc{A}{$\omega$} \vdash \conc{C}{w}$}
       \AxiomC{$\omega \not\in FV(C)$}
@@ -503,16 +514,19 @@ modal type system we will use to organize our web programs.
   We stated the rules of modal logic in the previous section, and now we want
   to convert each rule to a proof term, and hence define a language that we
   will call Lambda 5. \footnote{We should note that our Lambda 5 definition is
-  different from the one defined in \cite{tom7}. Our definition includes
-  $\forall$ and $\exists$ for worlds, while \cite{tom7} uses $\Box$ and
+  different from the one defined by Murphy\cite{tom7}. Our definition includes
+  $\forall$ and $\exists$ for worlds, while Murphy uses $\Box$ and
   $\Diamond$ instead. Since this thesis is more about the compilation process
-  than logic itself, we choose to fast-forward to quantifiers.}
+  than logic itself, we choose to fast-forward to quantifiers. However, our
+  inference rules for $\forall$ and $\exists$ are borrowed from the MinML5
+  definition in Murphy's work. We are just using the name Lambda 5 for a
+  different definition than he does.}
   The relationship between modal logic rules and proof
   terms in Lambda 5 should resemble how propositional logic and simply typed
   lambda calculus are related in Curry-Howard correspondence.  In simpler
   words, modal propositions will be types in Lambda 5, and proof trees will be
   Lambda 5 expressions. \autoref{fig:l5term} shows the proof terms of Lambda
-  5.\cite{tom7}\cite{monadic}
+  5, as presented by Murphy\cite{tom7, monadic}
 
   \begin{figure}[ht]
     \caption{Proof terms of Lambda 5}
@@ -587,7 +601,8 @@ modal type system we will use to organize our web programs.
       \RightLabel{$\texttt{at}_i$} % at intro
       \UnaryInfC{$\Gamma \vdash \conc{|held|\ N : A\ \texttt{at}\ \text{w'}}{w}$}
       \DisplayProof
-      \hskip 1.5em
+    \end{center}\bigskip
+    \begin{center}
       \AxiomC{$\Gamma \vdash \conc{M : A\ \texttt{at}\ \text{w''}}{w'}$}
       \AxiomC{$\Gamma, \conc{x : A}{w''} \vdash \conc{N : C}{w'}$}
       \RightLabel{$\texttt{at}_i$} % at elim
@@ -610,7 +625,8 @@ modal type system we will use to organize our web programs.
       \RightLabel{$\exists_i$} % exists intro
       \UnaryInfC{$\Gamma \vdash \conc{\exists \omega . A}{w}$}
       \DisplayProof
-      \hskip 1.5em
+    \end{center}\bigskip
+    \begin{center}
       \AxiomC{$\Gamma \vdash \conc{\exists \omega . A}{w'}$}
       \AxiomC{$\Gamma, \omega \text{ world}, \conc{A}{$\omega$} \vdash \conc{C}{w}$}
       \AxiomC{$\omega \not\in FV(C)$}
@@ -640,7 +656,8 @@ modal type system we will use to organize our web programs.
   The restriction they have is communication. They cannot write down
   information that contains communication from their cell.
   Therefore we define a concept of mobility in \autoref{fig:l5Mobile} and then
-  a communication inference rule in \autoref{fig:l5get}.
+  a communication inference rule in \autoref{fig:l5get}, as presented by
+  Murphy.\cite{tom7}
 
   \begin{figure}[ht]
     \caption{Mobility judgment for Lambda 5}
@@ -731,14 +748,15 @@ modal type system we will use to organize our web programs.
   % proof rules for box and shamrock are different
 
   \begin{figure}[ht]
-    \caption{Validity rules for in Lambda 5}
+    \caption{Validity rules for in Lambda 5, as presented by Murphy.\cite{tom7} }
     \label{fig:l5shamrock}
     \begin{center}
       \AxiomC{$\Gamma, \omega \text{ world} \vdash \conc{M : A}{$\omega$}$}
       \RightLabel{$\shamrock_i$} % Shamrock intro
       \UnaryInfC{$\Gamma \vdash \conc{|sham|\ \omega . M : \shamrock_\omega A}{w}$}
       \DisplayProof
-      \hskip 1.5em
+    \end{center}\bigskip
+    \begin{center}
       \AxiomC{$\Gamma \vdash \conc{M : \shamrock_\omega A}{w'}$}
       \AxiomC{$\Gamma, u \sim \omega.A  \vdash \conc{N : C}{w'}$}
       \RightLabel{$\shamrock_e$} % Shamrock elim
@@ -802,6 +820,29 @@ bound variables. Only after that we can hoist the functions, i.e.\ lambda
 lifting. Finally, before conversion to JavaScript, we have to monomorphize
 valid values into values in specific worlds.
 
+Through every step, we specify a way, namely |convertType|, that a type will be
+converted into the next language and show that our conversion obeys the
+restrictions of that. In other words, we are implementing a type-preserving
+compiler using the Agda proof assistant and verifying static correctness.
+
+Now that we have a broader view about the entire compilation process, let's
+define what a world is in our languages.
+
+\begin{code}
+  data World : Set where
+    client : World
+    server : World
+\end{code}
+
+We define |World| as a data type that only has two values.  Note that our
+approach is different from Licata and Harper\cite{monadic}, they use Agda's
+|postulate| keyword to assume that there is a type |World| and it has at least
+two values |client| and |server|, leaving the door open for other possible
+values.  However our definition shows that there is no other possible value for
+the type |World|, which means we can do induction on it if necessary, and show
+that world equality is decidable. We will use the same definition of |World| in
+all of our languages.
+
 % }}}
 
   % ML5 {{{
@@ -841,8 +882,8 @@ valid values into values in specific worlds.
   for this saves us from the trouble of having to define substitution
   ourselves.  We will also define |Context = List Hyp|.
 
-  We will call what comes after the $\vdash$. We will call this
-  small judgment a conclusion.
+  We will call what comes after the small judgment that comes after $\vdash$ a
+  conclusion.
 
   \begin{code}
     data Conc : Set where
@@ -851,9 +892,16 @@ valid values into values in specific worlds.
   \end{code}
 
   We have two kinds of conclusion; we will call the first an expression and the
-  second a value. In our definition, an expression is a term that
+  second, a value. In our definition, an expression is a term that
   potentially requires network communication for evaluation. A value, on the
-  other hand, does not.
+  other hand, does not.\footnote{It is worth noting that what we call a value
+  is not literally a value. Intuitively most readers think that a value is
+  something that cannot be further evaluated. However in our definition |4 + 5|
+  is a value. What we mean by the word value is in fact a pure computation, one
+  that does not require any communication. That being said, we will keep using
+  the term ``value'' to be consistent with Murphy\cite{tom7}, and Licata and
+  Harper.\cite{monadic}} Therefore an expression conclusion will look like
+  |τ < w >|, and a value conclusion will look like |↓ τ < w >|.
 
   Before defining the terms of ML5, let's define the mobility judgment in ML5
   so that we can use it in the terms.
@@ -885,7 +933,8 @@ valid values into values in specific worlds.
     `_∧_ : ∀ {w} → Γ ⊢ ↓ `Bool < w > → Γ ⊢ ↓ `Bool < w > → Γ ⊢ ↓ `Bool < w >
     `_∨_ : ∀ {w} → Γ ⊢ ↓ `Bool < w > → Γ ⊢ ↓ `Bool < w > → Γ ⊢ ↓ `Bool < w >
     `¬_  : ∀ {w} → Γ ⊢ ↓ `Bool < w > → Γ ⊢ ↓ `Bool < w >
-    `if_`then_`else_ : ∀ {τ w} → Γ ⊢ `Bool < w > → Γ ⊢ τ < w > → Γ ⊢ τ < w > → Γ ⊢ τ < w >
+    `if_`then_`else_ : ∀ {τ w} → Γ ⊢ `Bool < w >
+                     → Γ ⊢ τ < w > → Γ ⊢ τ < w > → Γ ⊢ τ < w >
     `n_  : ∀ {w} → ℤ → Γ ⊢ ↓ `Int < w >
     `_≤_ : ∀ {w} → Γ ⊢ ↓ `Int < w > → Γ ⊢ ↓ `Int < w > → Γ ⊢ ↓ `Bool < w >
     `_+_ : ∀ {w} → Γ ⊢ ↓ `Int < w > → Γ ⊢ ↓ `Int < w > → Γ ⊢ ↓ `Int < w >
@@ -911,7 +960,9 @@ valid values into values in specific worlds.
   are using is actually in the context.
 
   \begin{code}
-    `λ_⦂_⇒_ : ∀ {τ w} → (x : Id) (σ : Type) → (x ⦂ σ < w > ∷ Γ) ⊢ τ < w > → Γ ⊢ ↓ (` σ ⇒ τ) < w >
+    `λ_⦂_⇒_ : ∀ {τ w} → (x : Id) (σ : Type)
+            → (x ⦂ σ < w > ∷ Γ) ⊢ τ < w >
+            → Γ ⊢ ↓ (` σ ⇒ τ) < w >
     `_·_ : ∀ {τ σ w} → Γ ⊢ (` τ ⇒ σ) < w > → Γ ⊢ τ < w > → Γ ⊢ σ < w >
   \end{code}
 
@@ -929,8 +980,10 @@ valid values into values in specific worlds.
     `snd : ∀ {τ σ w} → Γ ⊢ (` τ × σ) < w > → Γ ⊢ σ < w >
     `inl_`as_ : ∀ {τ w} → Γ ⊢ ↓ τ < w > → (σ : Type) → Γ ⊢ ↓ (` τ ⊎ σ) < w >
     `inr_`as_ : ∀ {σ w} → Γ ⊢ ↓ σ < w > → (τ : Type) → Γ ⊢ ↓ (` τ ⊎ σ) < w >
-    `case_`of_⇒_||_⇒_ : ∀ {τ σ υ w} → Γ ⊢ (` τ ⊎ σ) < w > → (x : Id) → (x ⦂ τ < w > ∷ Γ) ⊢ υ < w >
-                       → (y : Id) → (y ⦂ σ < w > ∷ Γ) ⊢ υ < w > → Γ ⊢ υ < w >
+    `case_`of_⇒_||_⇒_ : ∀ {τ σ υ w} → Γ ⊢ (` τ ⊎ σ) < w >
+                      → (x : Id) → (x ⦂ τ < w > ∷ Γ) ⊢ υ < w >
+                      → (y : Id) → (y ⦂ σ < w > ∷ Γ) ⊢ υ < w >
+                      → Γ ⊢ υ < w >
   \end{code}
 
   Then we define terms for the product type |`_×_|, which corresponds to the
@@ -940,11 +993,16 @@ valid values into values in specific worlds.
 
   \begin{code}
     `hold : ∀ {τ w w'} → Γ ⊢ ↓ τ < w' > → Γ ⊢ ↓ (` τ at w') < w >
-    `leta_`=_`in_ : ∀ {τ σ w w'} → (x : Id) → Γ ⊢ (` τ at w') < w > → ((x ⦂ τ < w' >) ∷ Γ) ⊢ σ < w > → Γ ⊢ σ < w >
-    `sham : ∀ {w} {A : World → Type} → ((ω : World) → Γ ⊢ ↓ (A ω) < ω >) → Γ ⊢ ↓ `⌘ A < w >
+    `leta_`=_`in_ : ∀ {τ σ w w'} → (x : Id) → Γ ⊢ (` τ at w') < w >
+                  → ((x ⦂ τ < w' >) ∷ Γ) ⊢ σ < w >
+                  → Γ ⊢ σ < w >
+    `sham : ∀ {w} {A : World → Type}
+          → ((ω : World) → Γ ⊢ ↓ (A ω) < ω >) → Γ ⊢ ↓ `⌘ A < w >
     `letsham_`=_`in_ : ∀ {σ w} {A : World → Type} → (u : Id) → Γ ⊢ `⌘ A < w >
                      → (u ∼ A ∷ Γ) ⊢ σ < w > → Γ ⊢ σ < w >
-    `put : ∀ {τ σ w} {m : τ mobile} (u : Id) → Γ ⊢ τ < w > → ((u ∼ (λ _ → τ)) ∷ Γ) ⊢ σ < w > → Γ ⊢ σ < w >
+    `put : ∀ {τ σ w} {m : τ mobile} (u : Id) → Γ ⊢ τ < w >
+         → ((u ∼ (λ _ → τ)) ∷ Γ) ⊢ σ < w >
+         → Γ ⊢ σ < w >
   \end{code}
 
   We define introduction and elimination terms for the |at| and $\shamrock$
@@ -1004,6 +1062,7 @@ valid values into values in specific worlds.
 
   % CPS {{{
   \subsection{CPS}
+  \label{ssec:cps}
 
   % CPS intro {{{
 
@@ -1016,7 +1075,7 @@ valid values into values in specific worlds.
   computation is completed.  Since nothing is returned and the rest of the
   computation happens through the continuation function, our resulting program
   in CPS will be an expression without a type, we will call this a continuation
-  expression, |⋆|.
+  expression, |⋆< w >|.
 
   \begin{code}
   data Conc : Set where
@@ -1094,9 +1153,9 @@ valid values into values in specific worlds.
         → Γ ⊢ ⋆< w >
   \end{code}
 
-  Similarly, |`put| and the elimination terms of |at|, $\shamrock$, $\forall$
-  and $\exists$ become continuation expressions. All expressions in the
-  corresponding terms in ML5 are now |⋆< w >| continuation expressions, but
+  Similarly, |`put_`=_`in_| and the elimination terms of |at|, $\shamrock$,
+  $\forall$ and $\exists$ become continuation expressions. All expressions in
+  the corresponding terms in ML5 are now |⋆< w >| continuation expressions, but
   their contexts remain the same.
 
   \begin{code}
@@ -1108,8 +1167,9 @@ valid values into values in specific worlds.
 
   Observe that our definition of |`go| differs from its counterpart |`get| in
   the sense that it does not require mobility, because our expressions no
-  longer have a type that we can check for mobility.
-  Our definition of primitives remain the same except the judgment
+  longer have a type that we can check for mobility.\footnote{We will fix this
+  by using |`put_`=_`in_|, which requires mobility, when we are converting
+  |`get|.} Our definition of primitives remain the same except the judgment
   change. However, notice that function calls are different especially because
   the function type |`_⇒_| in ML5 does not exist in the CPS language; it is
   replaced by |`_cont|. We also define a new term is |`halt|, which will be
@@ -1156,15 +1216,17 @@ valid values into values in specific worlds.
   conversion of the lambda term in \hyperref[par:cpsInteresting]{the
   interesting conversion cases}.
 
-  To convert ML5 to JavaScript, we need one function to convert the value type,
-  and another one to convert the star expressions.
+  To convert ML5 to the CPS language, we need one function to convert the
+  value type, and another one to convert the continuation expressions |⋆< w >|.
 
   \begin{code}
   convertValue : ∀ {Γ τ w}
                → Γ ⊢₅ ↓ τ < w >
                → (convertCtx Γ) ⊢ₓ ↓ (convertType τ) < w >
   convertExpr : ∀ {Γ τ w}
-              → (K : ∀ {Γ'} {s' : (convertCtx Γ) ⊆ Γ'} → Γ' ⊢ₓ ↓ (convertType τ) < w > → Γ' ⊢ₓ ⋆< w >)
+              → (K : ∀ {Γ'} {s' : (convertCtx Γ) ⊆ Γ'}
+                   → Γ' ⊢ₓ ↓ (convertType τ) < w >
+                   → Γ' ⊢ₓ ⋆< w >)
               → Γ ⊢₅ τ < w >
               → (convertCtx Γ) ⊢ₓ ⋆< w >
   \end{code}
@@ -1194,7 +1256,9 @@ valid values into values in specific worlds.
                   → Γ' ⊢ₓ ↓ (convertType τ) < w >
     convertExpr' : ∀ {Γ Γ' τ w}
                 → {s : (convertCtx Γ) ⊆ Γ'}
-                → (K : ∀ {Γ''} {s' : Γ' ⊆ Γ''} → Γ'' ⊢ₓ ↓ (convertType τ) < w > → Γ'' ⊢ₓ ⋆< w >)
+                → (K : ∀ {Γ''} {s' : Γ' ⊆ Γ''}
+                     → Γ'' ⊢ₓ ↓ (convertType τ) < w >
+                     → Γ'' ⊢ₓ ⋆< w >)
                 → Γ ⊢₅ τ < w >
                 → Γ' ⊢ₓ ⋆< w >
   \end{code}
@@ -1278,7 +1342,8 @@ valid values into values in specific worlds.
   \begin{code}
     convertExpr' {s = s} K (` t · u) =
       convertExpr' {s = s} (λ {_}{s'} v → convertExpr' {s = s' ∘ s}
-        (λ {_}{s''} v' → `call (⊆-term-lemma s'' v) (` v' , (`λ "x" ⦂ _ ⇒ K {s' = there ∘ s'' ∘ s'} (`v "x" (here refl))))) u) t
+        (λ {_}{s''} v' → `call (⊆-term-lemma s'' v)
+          (` v' , (`λ "x" ⦂ _ ⇒ K {s' = there ∘ s'' ∘ s'} (`v "x" (here refl))))) u) t
   \end{code}
 
   Since we changed lambda terms so much, we also have to adjust function calls
@@ -1290,7 +1355,8 @@ valid values into values in specific worlds.
   \begin{code}
     convertExpr' {w = w}{s = s} K (`get {w' = w'}{m = m} t) =
         `go[ w' ] (convertExpr' {s = s} (λ {_}{s'} v →
-          `put_`=_`in_ {m = convertMobile m} "u" v (`go[ w  ] (K {s' = there ∘ s'} (`vval "u" (here refl))))) t)
+          `put_`=_`in_ {m = convertMobile m} "u" v
+            (`go[ w  ] (K {s' = there ∘ s'} (`vval "u" (here refl))))) t)
   \end{code}
 
   We mentioned that |`go| does not contain the notion of mobility, unlike
@@ -1331,7 +1397,7 @@ valid values into values in specific worlds.
   The first type will be used for the environment objects we described above,
   and the second type is a hardcoded existential pair we will use to create
   closures, a combination, i.e.\ pair, of the environment object and the
-  function.
+  function.\cite{tapl}
 
   Let's start by adding the terms to use the recently introduced type |`Env|.
 
@@ -1340,7 +1406,8 @@ valid values into values in specific worlds.
     `open_`in_ : ∀ {Δ w} → Γ ⊢ ↓ `Env Δ < w > → (Δ ++ Γ) ⊢ ⋆< w > → Γ ⊢ ⋆< w >
   \end{code}
 
-  We will have to add existential pair intro and elim rules to our language.
+  We will have to add existential pair introduction and elimination rules to
+  our language.
 
   \begin{code}
     `packΣ : ∀ {σ w} → (τ : Type)
@@ -1391,7 +1458,8 @@ valid values into values in specific worlds.
   direct conversion of contexts and types of the values.
 
   \begin{code}
-    convertValue {Γ}{_}{w} (`λ x ⦂ σ ⇒ t) = `packΣ (`Env (convertCtx Γ)) (` `buildEnv id , (`λ "p" ⦂ _ ⇒ c))
+    convertValue {Γ}{_}{w} (`λ x ⦂ σ ⇒ t) =
+        `packΣ (`Env (convertCtx Γ)) (` `buildEnv id , `λ "p" ⦂ _ ⇒ c)
       where
         t' : convertCtx ((x ⦂ σ < w >) ∷ Γ) ⊢ₒ ⋆< w >
         t' = convertCont t
@@ -1409,7 +1477,9 @@ valid values into values in specific worlds.
   takes a pair of the initial argument and the environment we just built.  We
   expand the function body with expressions to name the environment object,
   initial argument, and to open up the environment object in the local context.
-  This way we show that the resulting lambda function is a closed term.
+  Observe that the argument |"p"| is the only thing in the context. The lambda
+  function |`λ "p" ⦂ _ ⇒ c| is in fact a closed term, even though the type of
+  th constructor |`packΣ| does not show this explicitly.
 
   Notice that the term |t'| will be too strong to fit in the last step of our
   definition, because we defined variables and opened an environment. We have
@@ -1545,6 +1615,17 @@ valid values into values in specific worlds.
       to it instead of having the literal lambda term.
   \end{enumerate}
 
+  In the closure language, we changed |`go| to |`go-cc| in a way that the term inside will always be a function. This guarantees that the network computation function will always be lifted and given a name. We want to use this name during our network communication, which is why we have a string argument in |`go-cc|. We can save that name during lambda lifting.
+
+  \begin{code}
+    liftCont n (`go-cc[ w' ] str u) with liftValue n u
+    ... | n' , xs , Δ , u' = n' , xs , Δ , (`go-cc[ w' ] ("_go" ++ show n) u')
+  \end{code}
+
+  To add a name tag to |`go-cc|, we are using the unupdated number |n| because
+  it will be the value to be used in the top-most level lambda, which is in
+  fact the function we want to access later.
+
   The other cases of these two functions consist of recursive calls, list
   append equality proofs and calls to the weakening lemma. The actual code is
   verbose and not very interesting for our purposes.
@@ -1552,7 +1633,7 @@ valid values into values in specific worlds.
   % }}}
 
   % Monomorphization {{{
-  \subsection{Lifted Monomorphic}
+  \subsection{Lifted monomorphic}
 
   Until this point, our definition of |Hyp| for every language contained two
   constructors: one for a specific world, and valid values. However there is no
@@ -1630,7 +1711,8 @@ valid values into values in specific worlds.
     convertCtx : Contextₒ → Contextᵐ
     convertCtx [] = []
     convertCtx ((x ⦂ τ < w >) ∷ xs) = (id , convertType τ , w) ∷ convertCtx xs
-    convertCtx ((u ∼ C) ∷ xs) = (u ⦂ convertType (C client) < client >) ∷ (u ⦂ convertType (C server) < server >) ∷ convertCtx xs
+    convertCtx ((u ∼ C) ∷ xs) =
+      (u ⦂ convertType (C client) < client >) ∷ (u ⦂ convertType (C server) < server >) ∷ convertCtx xs
   \end{code}
 
   Since a converted context now can be longer than a given context, we have to
@@ -1792,7 +1874,7 @@ data Stm_<_> : Context → World → Set where
 % }}}
 
 % Function Statements {{{
-\subsection{Function Statements}
+\subsection{Function statements}
 \label{ssec:fnstm}
 
 Now let's define rules for statements that are allowed in function definitions.
@@ -2006,7 +2088,8 @@ of the object, then we can access the key.
 \begin{code}
 `packΣ : ∀ {σ w} → (τ : Type)
       → Γ ⊢ `Object (("type" , `String) ∷ ("fst" , τ) ∷
-                     ("snd" , `Function (`Object (("type" , `String) ∷ ("fst" , σ) ∷ ("snd" , τ) ∷ []) ∷ []) `Undefined) ∷ []) < w >
+                     ("snd" , `Function (`Object (("type" , `String) ∷
+                        ("fst" , σ) ∷ ("snd" , τ) ∷ []) ∷ []) `Undefined) ∷ []) < w >
       → Γ ⊢ `Σt[t×[ σ ×t]cont] < w >
 `proj₁Σ : ∀ {τ σ w} → Γ ⊢ `Σt[t×[ σ ×t]cont] < w > → Γ ⊢ τ < w >
 `proj₂Σ : ∀ {τ σ w} → Γ ⊢ `Σt[t×[ σ ×t]cont] < w >
@@ -2046,7 +2129,9 @@ example \lstinline{JSON.stringify(\{"a": undefined\})} returns
 
 % }}}
 
-That concludes our formalization of JavaScript. Before we move on, we state and define weakening lemmas for all three types we defined above.
+We now finished the formalization of a subset of JavaScript. We also state and
+define weakening lemmas for all three types we defined above, their proofs are
+simple inductions.
 
 \begin{code}
   ⊆-stm-lemma : ∀ {Γ Γ' w} → Γ ⊆ Γ' → Stm Γ < w > → Stm Γ' < w >
@@ -2054,7 +2139,72 @@ That concludes our formalization of JavaScript. Before we move on, we state and 
   ⊆-exp-lemma : ∀ {Γ Γ' τ w} → Γ ⊆ Γ' → Γ ⊢ τ < w > → Γ' ⊢ τ < w >
 \end{code}
 
-Their definitions are simple inductions.
+Before we move on, we also define a function to get a default filler value for
+any type we want. We will use this as a hacky solution for when there is a
+value for which we have to satisfy the type. Since we do not have a value
+\lstinline{null} or \lstinline{undefined} that fits any type\footnote{Our
+|`undefined| value has the value |`Undefined| so it is not a good candidate.
+This is a purposeful design decision.}, we need a way to get a filler value.
+
+\begin{code}
+  default : ∀ {Γ w} (τ : Type) → Γ ⊢ τ < w >
+  default `Undefined = `undefined
+  default `Bool = `false
+  default `Number = `n (inj₁ (+ 0))
+  default `String = `string ""
+  default (`Function τs σ) =
+    `λ (map (underscorePrefix ∘ Data.Nat.Show.show) (downFrom (length τs)))  ⇒
+      ((`exp `undefined ；return default σ))
+  default {Γ}{w} (`Object fields) =
+      eq-replace (cong (λ l → Γ ⊢ (`Object l) < w >) (pf fields)) (`obj (f fields))
+    where
+      f : List (Id × Type) → List (Id × Σ Type (λ τ → Γ ⊢ (τ < w >)))
+      f [] = []
+      f ((id , τ) ∷ xs) = (id , τ , default {Γ}{w} τ) ∷ f xs
+      pf : (xs : _) → toTypePairs (f xs) ≡ xs
+      pf [] = refl
+      pf (x ∷ xs) = cong (λ l → x ∷ l) (pf xs)
+  default (`Σt[t×[_×t]cont] τ) =
+      `packΣ `Undefined
+        (`obj (("type" , _ , `string "pair") ∷
+               ("fst" , _ , `undefined) ∷
+               ("snd" , _ , (`λ ["o"] ⇒ (`nop ；return `undefined))) ∷ []))
+
+\end{code}
+
+The base types return a value that is obvious. The interesting cases here are
+functions, objects and the existential pair.  Our functions need to take a list
+of argument names, so we generate variable names like \lstinline{_1} and
+\lstinline{_0} for a function that takes two variables. Since variable names in
+JavaScript cannot start with numbers, we have to append some character to the
+beginning, so we chose underscore. Objects require a list of field names and
+terms, so we generate that and then prove that the list we generated satisfies
+the type of the object. Finally, the hardcoded existential pair needs to know
+what type to use. For convenience, we chose |`Undefined|. The rest of the case
+is straightforward from there.
+
+
+For actual code generation, we write the following functions that convert the
+formalization above to a code string.
+
+\begin{code}
+    stmSource : ∀ {Γ w} → Stm Γ < w > → String
+    fnStmSource : ∀ {Γ Γ' mσ w} → FnStm Γ ⇓ Γ' ⦂ mσ < w > → String
+    termSource : ∀ {Γ c} → Γ ⊢ c → String
+\end{code}
+
+Their definitions consist of string concatenations with recursive calls.
+
+Before any JavaScript code is written to file, we want to wrap them with basic
+code. For the server side, this code imports certain packages and starts and
+runs the server. For the client side, this code wraps the JavaScript code in
+HTML tags in makes it valid HTML code. They are basically string concatenations
+and their types are given below:
+
+\begin{code}
+  serverWrapper : String → String
+  clientWrapper : String → String
+\end{code}
 
 % }}}
 
@@ -2064,6 +2214,9 @@ Their definitions are simple inductions.
 \label{sec:tojs}
 
 % Types of functions {{{
+
+\subsection{Types of the conversion functions}
+\label{ssec:jsConvTypes}
 
 Now that we defined a very strict subset of JavaScript, we will generate
 JavaScript code from our last language.
@@ -2168,7 +2321,10 @@ xs)) ⊆ Γ| and |only server (convertCtx (toCtx xs)) ⊆ Δ)|.
 
 Now that we dealt with the conversion of the lifted functions, we should define
 conversion functions for continuation expressions and values in the lifted
-monomorphic language.
+monomorphic language. The upshot is that continuation expressions will convert
+to function statements and values will convert to JavaScript expressions. This
+is not a one-to-one correspondence, however thinking of the conversion this way
+helps us to locate things in the big picture.
 
 \begin{code}
     convertCont : ∀ {Γ Δ Φ}
@@ -2207,38 +2363,389 @@ communication code at the same time. One converted expression is not enough to
 handle all of that, ergo we need to be able to generate function statements as
 well.
 
+Before we get into the specific of these functions, let's define |convertType|.
+
+\begin{code}
+  convertType : {w : World} → Typeᵐ → Typeⱼ
+  convertType `Int = `Number
+  convertType `Bool = `Bool
+  convertType `Unit = `Object (("type" , `String) ∷ [])
+  convertType `String = `String
+  convertType {w} ` τ cont = `Function [ convertType {w} τ ] `Undefined
+  convertType {w} (` τ × σ) =
+    `Object (("type" , `String) ∷ ("fst" , convertType {w} τ ) ∷ ("snd" , convertType {w} σ) ∷ [])
+  convertType {w} (` τ ⊎ σ) =
+    `Object (("type" , `String) ∷ ("dir" , `String) ∷
+             ("inl" , convertType {w} τ) ∷ ("inr" , convertType {w} σ) ∷ [])
+  convertType {w} (`Σt[t×[_×t]cont] τ) = `Σt[t×[_×t]cont] (convertType {w} τ)
+  convertType {w} (`Env Γ) = `Object (hypsToPair w Γ)
+\end{code}
+
+The base types are converted directly. The case of |` τ cont| is a function
+without a return value as we discussed in \autoref{ssec:cps}. Therefore having
+|`Undefined| as the return type makes sense. Cases of |` τ × σ| and |` τ ⊎ σ|
+might look a bit cluttered, however we are merely making up some JavaScript
+objects that can represent these types. Especially the case of |` τ ⊎ σ| is a
+hacky solution; we keep the fields for both possibilities in the sum type, and
+keep an additional field |"dir"| so see if the value is ``in left'', i.e.\
+|inl| or ``in right'', i.e.\ |inr|. However, since an actual value of the type
+|` τ ⊎ σ| will only provide one of those values, we have to fill the other
+field by making up a filler value. We can use the function |default| for this.
+The most interesting case in here is |`Env|. So far we only had a constructor
+|`buildEnv| that enclosed the context, and did nothing else. Now we are saying
+that an environment will be a JavaScript object that holds mappings of names in
+the context to their values. The omission of the remaining types will be
+explained at the end of this section.
+
 % }}}
 
+% Conversion cases {{{
+
+\subsection{Conversion cases}
+
 Now that we have a better idea of the big picture, let's get into the specifics
-of this conversion.
+of this conversion. We will try to cover a few cases that encompass the general
+ideas about this conversion.
 
 \begin{code}
     convertCont {Γ}{Δ}{Φ}{s = s}{s' = s'} client (`if t `then u `else v)
       with convertValue {Γ}{Δ}{Φ}{s = s}{s' = s'} t
     ... | t' , (Δ' , tCli) , (Φ' , tSer)
-      with convertCont {Γ}{Δ' +++ Δ}{Φ' +++ Φ}{s = ++ʳ Δ' ∘ s}{s' = ++ʳ Φ' ∘ s'} client u
+      with convertCont {Γ}{Δ' +++ Δ}{Φ' +++ Φ}
+                       {s = ++ʳ Δ' ∘ s}{s' = ++ʳ Φ' ∘ s'} client u
     ... | (Δ'' , uCli) , (Φ'' , uSer)
-      with convertCont {Γ}{Δ' +++ Δ}{Φ' +++ Φ}{s = ++ʳ Δ' ∘ s}{s' = ++ʳ Φ' ∘ s'} client v
+      with convertCont {Γ}{Δ' +++ Δ}{Φ' +++ Φ}
+                       {s = ++ʳ Δ' ∘ s}{s' = ++ʳ Φ' ∘ s'} client v
     ... | (Δ''' , vCli) , (Φ''' , vSer) =
           (_ , (tCli ； (`if ⊆-exp-lemma (++ʳ Δ' ∘ s) t' `then uCli `else vCli)))
         , (_ , (tSer ； (uSer ； ⊆-fnstm-lemma (++ʳ Φ'') vSer)))
 \end{code}
 
+The first case we want to handle is the conditional continuation expression. We
+have three terms that we have to convert. After the first conversion, we get
+|Δ'| and |Φ'|, the additions to the environment after |convertValue t|. The
+next time we compile something, we use them in the context, as seen above in
+the calls |convertCont client u| and |convertCont client v|. Because of the
+context restrictions of the conditional function statement, i.e.\
+|`if_`then_`else|, in our JavaScript formalization, we want both of those calls
+to have the same initial contexts. By definition of the conditional function
+statement, the resulting different contexts are reconciled by taking their
+intersection.
+
+Note that the code snippet above is only the client case of the conditional;
+since the conditional function statement has to be in a specific world, we
+often have to pattern match on the world and define the cases separately.
+
+The server case of the conditional, and the case of |`letcase x , y `= t `in u
+`or v| are morally similar to the case above, therefore we can skip them.
+
 \begin{code}
     convertCont {Γ}{Δ}{Φ}{s = s}{s' = s'} w (`let x `=fst t `in u)
       with convertValue {Γ}{Δ}{Φ}{s = s}{s' = s'} t
     convertCont {Γ}{Δ}{Φ}{s = s}{s' = s'} client (`let x `=fst t `in u) | t' , (Δ' , tCli) , (Φ' , tSer)
-      with convertCont {_}{_ ∷ (Δ' +++ Δ)}{Φ' +++ Φ}{s = sub-lemma (++ʳ Δ' ∘ s)}{s' = ++ʳ Φ' ∘ s'} client u
+      with convertCont {_}{_ ∷ (Δ' +++ Δ)}{Φ' +++ Φ}
+                       {s = sub-lemma (++ʳ Δ' ∘ s)} {s' = ++ʳ Φ' ∘ s'}
+                       client u
     ... | (Δ'' , uCli) , (Φ'' , uSer) =
           (_ , (tCli ； (`var x (`proj (⊆-exp-lemma (++ʳ Δ' ∘ s) t') "fst" (there (here refl))) ； uCli)))
         , (_ , (tSer ； uSer))
 \end{code}
 
+We will look at an |`_×_| elimination case as an example of how we handle
+adding a variable to the context. Many continuation expressions are structured
+like |`let..=..`in..|, therefore this will serve as a general case for them.
+
+First we convert the monomorphic value |t| to a JavaScript value, which gives
+us |Δ'| and |Φ'|, the additions to the environment after |convertValue t|,
+similar to the previous case. In the next step, we have to add one slot to the
+context of the world we want to define a variable in. This is also reflected in
+the subset proof |s|, which is an implicit argument to the |convertCont| call
+we make. We are using a lemma we defined before, which says that if we know two
+lists that have a subset relation, the relation is preserved if we add the same
+element to both. It is a simple induction proof.
+
+\begin{code}
+sub-lemma : ∀ {l} {A : Set l} {Γ Δ : List A} {h : A} → Γ ⊆ Δ → (h ∷ Γ) ⊆ (h ∷ Δ)
+\end{code}
+
+Going back to the conversion case, once we have function statements and
+resulting contexts for the continuation expression, we can combine the function
+statements using |_；_|. However, we have to define the variable |x|, which in
+this case happens to be the first projection of a pair. Since we defined in
+|convertType| that pairs will turn into a certain kind of JavaScript objects,
+we do the projection on the JavaScript object.
+
+Note that the snippet above does not include the server case, which is very
+similar, as it would be redundant.
+
+Now we want to look at how we want to open an environment in the current
+context.  The word open in here means to make the names in the environment
+accessible in the context.\footnote{The word open is borrowed from ML-variants,
+since they use the keyword \lstinline{open} with modules.}
+
+\begin{code}
+    openEnv : ∀ {Γ δ Δ mσ w} → δ ⊆ Δ
+                              → Γ ⊢ⱼ (`Object (hypsToPair w Δ) < w >)
+                              → FnStm Γ ⇓ only w (convertCtx δ) ⦂ mσ < w >
+    openEnv {δ = []} {w = client} s t = `nop
+    openEnv {δ = []} {w = server} s t = `nop
+    openEnv {Γ}{δ = (x ⦂ τ < client >) ∷ δ}{Δ} {w = client} s t =
+         openEnv {Γ}{δ}{Δ} (sub-lemma' s) t
+      ； `var x (`proj (⊆-exp-lemma (++ʳ (onlyCliCtx (convertCtx δ))) t) x (hypsToPair∈ (s (here refl))))
+    openEnv {Γ}{δ = (x ⦂ τ < server >) ∷ δ}{Δ} {w = server} s t =
+         openEnv {Γ}{δ}{Δ} (sub-lemma' s) t
+      ； `var x (`proj (⊆-exp-lemma (++ʳ (onlySerCtx (convertCtx δ))) t) x (hypsToPair∈ (s (here refl))))
+    openEnv {Γ}{δ = (x ⦂ τ < server >) ∷ δ}{Δ} {w = client} s t =
+      openEnv {Γ}{δ}{Δ} (sub-lemma' s) t
+    openEnv {Γ}{δ = (x ⦂ τ < client >) ∷ δ}{Δ} {w = server} s t =
+      openEnv {Γ}{δ}{Δ} (sub-lemma' s) t
+\end{code}
+
+Observe that this is an induction on |δ|, which is a subset of |Δ|. This is a
+trick we had to do in order to simulate an induction on |Δ|. If we did an
+induction on |Δ|, then we would have to construct terms of type |`Object
+(hypsToPair w Δ) < w >| for diminishing |Δ|. The subset trick greatly facilitates the proof.
+
+The goal of the |openEnv| function is to build a function statement out of
+variable declarations for each item in the environment object. If an item does
+not belong to the current world, then we skip it and make a recursive call.
+Otherwise, we declare a variable with a projection to the corresponding field
+in the environment object and make a recursive call.
+
+We will not go over the |`open t `in u| case of |convertCont| since all it does
+is to call |openEnv| and then work out the proofs that the function statement
+generated here fits the subset restrictions we are required to satisfy.
+
+Now we should look at the |`buildEnv| case of |convertValue|. The full
+definition of it consists of the object creation and proofs that the object we
+created satisfies the types. The noteworthy part of the case is where we build
+the object itself.
+
+\begin{code}
+  convertValue {Γ}{w = w} (`buildEnv {Δ} pf) = _
+    where
+      envList : (Δ : Contextᵐ) → Δ ⊆ Γ → (w : World)
+             → List (Id × Σ Typeⱼ (λ τ → only w (convertCtx Γ) ⊢ⱼ (τ < w >)))
+      envList [] s w = []
+      envList ((x ⦂ τ < w' >) ∷ hs) s w with w decW w'
+      ... | no q = envList hs (s ∘ there) w
+      envList ((x ⦂ τ < w' >) ∷ hs) s .w' | yes refl =
+              (x , convertType {w'} τ , `v x (convert∈ (s (here refl)))) ∷ envList hs (s ∘ there) w'
+\end{code}
+
+Note that we replaced the real definition with an underscore. However the
+important content here is the function |envList|. Let's remember from the
+definition of closures that |`buildEnv| takes a proof that |Δ ⊆ Γ| and returns
+|Γ ⊢ ↓ `Env Δ < w >|. Therefore for the definition of |envList|, we can do an
+induction on |Δ| and adjust the subset proof at each step. If we are in the
+correct world, then we add a field that contains the name, type, and the value
+which is already in the context and is accessible through the subset proof. If
+we are in the wrong world, then we can discard the hypothesis we are looking
+at.
+
+The other cases of |convertValue| are simple inductions in the style of |convertCont| cases we have seen. Here is an example for the pair introduction term conversion:
+
+\begin{code}
+  convertValue {Γ}{Δ}{Φ}{s = s}{s' = s'} (` t , u)
+    with convertValue {Γ}{Δ}{Φ}{s = s}{s' = s'} t
+  ... | (t' , (Δ' , tCli) , (Φ' , tSer))
+    with convertValue {_}{Δ' +++ Δ}{Φ' +++ Φ}{s = ++ʳ Δ' ∘ s}{s' = ++ʳ Φ' ∘ s'} u
+  ... | (u' , (Δ'' , uCli) , (Φ'' , uSer)) =
+        (`obj (("type" , _ , `string "and") ∷ ("fst" , _ , t') ∷ ("snd" , _ , u') ∷ []))
+      , (_ , (tCli ； uCli)) , (_ , (tSer ； uSer))
+\end{code}
+
+The concepts that are at play here are already explained in the previous cases.
+
+Going back to the definition of |convertCont|, we should define how function calls should be converted to JavaScript.
+
+\begin{code}
+  convertCont {Γ}{Δ}{Φ}{s = s}{s' = s'} w (`call t u)
+    with convertValue {Γ}{Δ}{Φ}{s = s}{s' = s'} t
+  ... | (t' , (Δ' , tCli) , (Φ' , tSer))
+    with convertValue {_}{Δ' +++ Δ}{Φ' +++ Φ}{s =  ++ʳ Δ' ∘ s }{s' = ++ʳ Φ' ∘ s'} u
+  ... | (u' , (Δ'' , uCli) , (Φ'' , uSer)) with w
+  ... | client =
+        (_ , (tCli ； (uCli ； `exp (⊆-exp-lemma (++ʳ Δ'' ∘ ++ʳ Δ' ∘ s) (` t' · (u' ∷ []))))))
+      , (_ , (tSer ； uSer))
+  ... | server =
+        (_ , (tCli ； uCli))
+      , (_ , (tSer ； (uSer ； `exp (⊆-exp-lemma (++ʳ Φ'' ∘ ++ʳ Φ' ∘ s') (` t' · (u' ∷ []))))))
+\end{code}
+
+A function call in the lifted monomorphic language consists of two values, so
+we start by converting each of them, similar to our previous cases. When we get
+the JavaScript expressions and function statements back, we will pattern match
+on the world, and start constructing a JavaScript function statement. We
+mentioned in \autoref{ssec:jsConvTypes} that continuation statements and
+function statements, and values and JavaScript expressions will loosely match
+up. In that sense, even though a function call in JavaScript is an expression,
+it will match up a function statement here. Because of the CPS conversion, our
+functions are an action by themselves and they stand by themselves; they call
+their callback when the computation is finished. Therefore a function call
+should be converted into an expression statement |`exp| that contains the
+function call JavaScript expression. It is also worth noting that our
+JavaScript functions take an |All| list as an argument, so we have to put the
+argument in a singleton |All| list in the function call.
+
+As we stated in the introduction, the process of conversion to JavaScript is
+not entirely complete. We have not exactly specified the conversion rules for
+the modal types. We have a partially working idea for the |`go-cc| case. Let's
+take a closer look into |`go-cc|.
+
+\begin{code}
+  convertCont {Γ}{Δ}{Φ}{s = s}{s' = s'} client (`go-cc[ client ] str t)
+    with convertValue {Γ}{Δ}{Φ}{s = s}{s' = s'} t
+  ... | t' , (Δ' , tCli) , (Φ' , tSer) =
+    (_ , (tCli ； `exp (⊆-exp-lemma (++ʳ Δ' ∘ s) t'))) , (_ , tSer)
+  convertCont {Γ}{Δ}{Φ}{s = s}{s' = s'} server (`go-cc[ server ] str t)
+    with convertValue {Γ}{Δ}{Φ}{s = s}{s' = s'} t
+  ... | t' , (Δ' , tCli) , (Φ' , tSer) =
+    (_ , tCli) , (_ , (tSer ； `exp (⊆-exp-lemma (++ʳ Φ' ∘ s') t')))
+\end{code}
+
+These are the uninteresting cases of |`go-cc|. If we are already in the target
+world, we can just evaluate the expression here.
+
+For the cases that do have to communicate, we have to add code that sends a
+signal to the other world and waits for the response. We are using the
+Socket.IO library\cite{socketio} which is available for both front and back
+ends.
+
+Let's see an example program to understand the logic here. The program is
+supposed to ask the client user a prompt, for a file name. Then it will send
+the user input to the server. The server will read the given file and send the
+file content back to the client. Then the client will print the content to the
+page.\footnote{In our definition of ML5, this program can be written this way:
+\begin{code}
+  file : [] ⊢₅ `Unit < client >
+  file =
+    `prim `prompt `in
+    `prim `readFile `in
+    `prim `write `in
+    (` `val (`v "write" (here refl))
+     · `get {m = `Stringᵐ}  (` `val (`v "readFile" (there (here refl)))
+                             · `get {m = `Stringᵐ} (` `val (`v "prompt" (there (there (here refl))))
+                                                    · `val (`string "Enter file name"))))
+\end{code}}
+
+\begin{lstlisting}[caption={Example program for Socket.IO}]
+// The server side Node.js code
+var app = require('express')();
+var http = require('http').Server(app);
+var io = require('socket.io')(http);
+
+app.get('/', function(req, res){
+  res.sendfile('index.html');
+});
+
+io.on('connection', function(socket){
+  console.log('a user connected');
+
+  socket.on('disconnect', function(){
+    console.log('user disconnected');
+  });
+
+  socket.on('file', function(filename){
+    console.log("file req: " + filename);
+    socket.emit("file", require('fs').readFileSync(filename).toString());
+  });
+});
+
+http.listen(3000, function(){
+  console.log('listening on *:3000');
+});
+
+//////////////////////////////////
+// The client side JavaScript code
+//////////////////////////////////
+var socket = io();
+
+socket.emit('file', prompt("Enter file name"));
+socket.on('file', function(content){
+  console.log(content);
+  document.getElementById("result").innerHTML = content;
+});
+\end{lstlisting}
+
+Going back to |`go-cc|, if we are in the client and trying to get data from the
+server, we we are supposed to add a call to \lstinline{socket.on} in the
+client, and \lstinline{socket.emit} from the server with the converted value.
+Also notice that in \autoref{par:cpsInteresting}, we converted |`get| to
+include two |`go| terms. Hence a network flow started by the client will work
+as follows: The client will emit to the server that it is making a request, and
+start listening for a response. The server will detect this, and start
+computation. When the computation is finished, the server will emit it back to
+the client. The client will detect this and continue the program. The name tags
+placed in |`go-cc| during lambda lifting will be used in this process.
+
+This concludes the conversion to JavaScript. At the end, we can have a huge function composition that serves as a compiler pipeline from ML5 to JavaScript. Its definition is as follows:
+
+\begin{code}
+compileToJS : [] ⊢₅ `Unit < client > → String × String
+compileToJS = (clientWrapper *** serverWrapper)
+            ∘ (stmSource *** stmSource)
+            ∘ LiftedMonomorphicToJS.entryPoint
+            ∘ LiftedMonomorphize.entryPoint
+            ∘ LambdaLifting.entryPoint
+            ∘ CPStoClosure.convertCont
+            ∘ ML5toCPS.convertExpr (λ v → CPS.Terms.`halt)
+\end{code}
 % }}}
 
-% Related Work and Conclusion {{{
+% }}}
 
-\section{Related Work and Conclusion}
+% Related Work {{{
+
+\section{Related work}
+
+In this thesis we have studied the possible use of modal logic and its proof
+terms as a way to organize programs that require network communication between
+the client and the server in a web setting. As we mentioned throughtout the
+thesis, this is a spin-off of Murphy's dissertation\cite{tom7}, with the
+extension of verification in each step and using modern technologies like
+Node.js and Socket.IO.  Licata and Harper \cite{monadic} has worked on an Agda
+formalization of ML5 before, which was inspiring for this thesis and it is
+cited in relevant spots.  The description of modal logic judgments in
+Macedonio's dissertation\cite{macedonio}, and the definition of the language
+$\lambda_{rpc}$ in Jia and Walker's paper\cite{jiaWalker} were also interesting
+reads on the use of modal logic to represent distributed programs.
+
+Related to the verification side of my thesis, Chlipala has worked on verified
+and certified compilers of functional languages.  The certified type-preserving
+compiler described in \cite{chlipala2007certified} goes through similar
+compilation processes as we do in this thesis, using the Coq proof
+assistant.\cite{coq} Similarly his work in \cite{chlipala2010verified} explores
+the use of tactics in correctness proofs to overcome the amount of boilerplate
+code, which was a problem in this thesis as well. Long proofs of weakening
+lemmas of terms, type and hypothesis equality decidability could be avoided in
+a proof assistant that uses tactics.
+
+During the design decisions of the JavaScript formalization in
+\autoref{sec:jsformalization}, the work on |f*|\cite{fstar} and
+$\lambda_{JS}$\cite{lambdajs} was an inspiration. However these projects are
+attempting to embody the essential features of JavaScript, while it is enough
+to define a small simply typed subset for our purposes.
+
+It is also worth mentioning the projects that do not attempt to use modal logic
+to express communication. Chlipala's work on the Ur/Web programming language
+allows you to write front and back ends simultaneously.\cite{chlipala2010ur}
+Opa\cite{opa} is another example with a simpler type system and similar to this
+thesis, it compiles to JavaScript on both ends, using Node.js for the back end.
+It is also a superset of JavaScript, which allows usage of existing JavaScript
+libraries.  Similarly, Eliom\cite{eliom} is a superset of OCaml that allows
+writing a client-server application as a single program.  Meteor\cite{meteor}
+is another relevant project that integrates front end events with database and
+Socket.IO.  There are also other functional web programming languages that do
+not handle communication but attempt to solve the infamous JavaScript problem
+such as Elm\cite{elm} and PureScript\footnote{\url{http://www.purescript.org/}}.
+
+% }}}
+
+% Conclusion {{{
+
+\section{Conclusion}
+
 
 % }}}
 
