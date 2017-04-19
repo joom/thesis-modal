@@ -24,8 +24,6 @@
     sensitive=true
   }
   \lstset{
-    numbers=left,
-    numberstyle=\small,
     language=JavaScript,
     frame=single,
     framexleftmargin=15pt,
@@ -99,14 +97,15 @@
   throughout the years that we worked together.  Every undeserved ``Good work!''
   I got from him was a great source of motivation for me.
 
-  The amazing computer science classes I have taken with James Lipton, Norman
-  Danner, and Jeff Epstein, and the eye-opening mathematics classes I have
-  taken with Cameron Donnay Hill and David Pollack have sparkled my interest
-  in research, so I would like to thank them for that.
+  I would like to express my gratitude to Norman Danner and Jeff Epstein for
+  reading and evaluating my thesis. Additionally, the great computer science
+  and mathematics courses I have taken with James Lipton, Norman Danner, Jeff
+  Epstein, Cameron Donnay Hill and David Pollack have sparkled my interest in
+  research, so I would like to thank them for that.
 
   I would like to thank my dear colleague and friend Maksim Trifunovski for his
   support and comradery throughout the years we did research and worked as
-  course assistants, not to mention his endless supply of \textit{rakija}.
+  course assistants together, not to mention his endless supply of \textit{rakija}.
 
   I am thankful to Pi, Emily, Molly, Kivanc, Damlasu, Isin Ekin, and my family
   for the emotional support they provided by putting up with me babbling
@@ -189,7 +188,8 @@ implementation over formalization on the last step of generating JavaScript.
 This thesis will attempt to formalize the last step as well. Moreover, Murphy's
 formalization of conversion steps are written in Twelf\cite{twelf}, while both
 our formalization and compiler implementation use the Agda proof
-assistant.\cite{norell} Agda is a dependently typed functional programming
+assistant.\cite{norell}\footnote{We are using Agda 2.5.2 and the Agda standard
+library 0.12.} Agda is a dependently typed functional programming
 language with Haskell-like syntax, and this thesis will not go into detail
 about explaining the language.\footnote{Since we will not go into detail about
 Agda or dependent typing, one crucial concept we should remember is types can
@@ -201,7 +201,14 @@ this distinction, we will omit the explanation. For more information, you can
 read about Girard's paradox.\\A syntactic reminder about Agda is that it allows
 mixfix naming of variables. An underscore character in a name stands for an
 argument; in fact we will define the ternary conditional operator as
-|`if_`then_`else_| in ML5. }
+|`if_`then_`else_| in ML5.\\ Another different feature of Agda is that it
+allows implicit arguments in functions. If you see an argument that is in curly
+braces, you do not have to provide its value during the function call. If you
+do not want to write type of the implicit argument either , you can write it in
+the beginning of the type as |f : ∀ {a b c} → ...| Implicit arguments are used
+in cases that they can easily be inferred. If we were to prove that zero is
+less than or equal to all natural numbers, we do not have to write natural
+number as an explicit argument. We can state the lemma as |pf : ∀ {n} → 0 ≤ n|.  }
 
 Our final program\footnote{The Agda source code is available at
 \url{http://github.com/joom/modal}} consists of $\approx 3800$ lines of
@@ -237,7 +244,8 @@ Currently all the steps are entirely completed except the conversion from the
 monomorphic language to JavaScript. Currently conversions for base types and
 function calls work properly, and there is partially working network
 communication between the client and the server. It is also worth noting that
-our verification only proves static correctness, not operational semantics.
+our verification only proves static correctness by implementing a type
+preserving compiler, it does not prove anything about operational semantics.
 
 Now let's go over some aspects of modal logic, so that we can understand the
 modal type system we will use to organize our web programs.
@@ -360,7 +368,9 @@ modal type system we will use to organize our web programs.
       \RightLabel{$\land_i$} % and intro
       \BinaryInfC{$\Gamma \vdash \conc{A \land B}{w}$}
       \DisplayProof
-      \hskip 1.5em
+    \end{center}\bigskip
+
+    \begin{center}
       \AxiomC{$\Gamma \vdash \conc{A \land B}{w}$}
       \RightLabel{$\land_{e_1}$} % and elim 1
       \UnaryInfC{$\Gamma \vdash \conc{A}{w} $}
@@ -968,6 +978,14 @@ all of our languages.
   \end{code}
 
   We are defining two values to use variables that are already in the context.
+  \footnote{We are using the definition of the type |_∈_| for list membership
+  in the Agda standard library. Suppose we are looking at |x ∈ xs|. It has two
+  constructors, |here| is applicable if the |x| is the head of the list. The
+  other constructor |there| is a way to skip one element in the list; if you
+  know |x ∈ xs|, then you know |x ∈ y ∷ xs| for all |y|. The idea behind this
+  type is the same as De Bruijn indices. If you consider the natural number
+  type with the constructors |zero| and |suc|, |here| corresponds to |zero| and
+  |suc| corresponds to |there|.}
   The first is for the judgment |x ⦂ τ < w >|, which refers to values that are
   in a specific world.  The second is for the judgment |u ∼ C|, which refers to
   valid values. In both cases, our values require a proof that the variable we
@@ -1562,9 +1580,14 @@ all of our languages.
   do is to use an existential pair to say that there exists a list of triple of
   names, types and worlds that satisfy a certain property. If we call this
   property |P : List (Id × Type × World) → Set|, then the existential type
-  would be written as |Σ (List (Id × Type × World)) (λ xs → P xs)|.  Now we
-  need to specify what |P| is. Since we have two things we have to show, we can
-  use a product, i.e.\ pair.
+  would be written as |Σ (List (Id × Type × World)) (λ xs → P
+  xs)|.\footnote{|Σ| in Agda is standard library is the type for existential
+  pairs. It basically stands for ``there exists''. In constructive logic, to
+  prove that $\exists x. P(x)$ holds, you would choose an $x$ and then
+  show that $P(x)$ holds. In Agda, we follow the same path. For the type
+  |Σ A (λ a → P a)|, we first write a term |a : A| and then write a term of the
+  type |P a| to prove that it holds. }  Now we need to specify what |P| is.
+  Since we have two things we have to show, we can use a product, i.e.\ pair.
 
   The first part of the product will be a special kind of list called |All|.
   \footnote{The type |All| is defined in Agda standard library, in
@@ -2630,7 +2653,7 @@ Let's see an example program to understand the logic here. The program is
 supposed to ask the client user a prompt, for a file name. Then it will send
 the user input to the server. The server will read the given file and send the
 file content back to the client. Then the client will print the content to the
-page.\footnote{In our definition of ML5, this program can be written this way:
+page. In our definition of ML5, this program can be written this way:
 \begin{code}
   file : [] ⊢₅ `Unit < client >
   file =
@@ -2638,16 +2661,20 @@ page.\footnote{In our definition of ML5, this program can be written this way:
     `prim `readFile `in
     `prim `write `in
     (` `val (`v "write" (here refl))
-     · `get {m = `Stringᵐ}  (` `val (`v "readFile" (there (here refl)))
-                             · `get {m = `Stringᵐ} (` `val (`v "prompt" (there (there (here refl))))
-                                                    · `val (`string "Enter file name"))))
-\end{code}}
+     · `get {m = `Stringᵐ}
+      (` `val (`v "readFile" (there (here refl)))
+              · `get {m = `Stringᵐ} (` `val (`v "prompt" (there (there (here refl))))
+                                    · `val (`string "Enter file name"))))
+\end{code}
+
+Now let's see what this program should look like in JavaScript.
 
 \begin{lstlisting}[caption={Example program for Socket.IO}]
 // The server side Node.js code
 var app = require('express')();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
+var fs = require('fs');
 
 app.get('/', function(req, res){
   res.sendfile('index.html');
@@ -2662,7 +2689,7 @@ io.on('connection', function(socket){
 
   socket.on('file', function(filename){
     console.log("file req: " + filename);
-    socket.emit("file", require('fs').readFileSync(filename).toString());
+    socket.emit("file", fs.readFileSync(filename).toString());
   });
 });
 
@@ -2718,7 +2745,9 @@ terms as a way to organize programs that require network communication between
 the client and the server in a web setting. As we mentioned throughtout the
 thesis, this is a spin-off of Murphy's dissertation\cite{tom7}, with the
 extension of verification in each step and using modern technologies like
-Node.js and Socket.IO.  Licata and Harper \cite{monadic} has worked on an Agda
+Node.js and Socket.IO. We extend his work by formalizing it in a different
+proof assistant, and formalizing the last step of conversion to JavaScript.
+Licata and Harper \cite{monadic} has worked on an Agda
 formalization of ML5 before, which was inspiring for this thesis and it is
 cited in relevant spots.  The description of modal logic judgments in
 Macedonio's dissertation\cite{macedonio}, and the definition of the language
@@ -2743,7 +2772,8 @@ to define a small simply typed subset for our purposes.
 
 It is also worth mentioning the projects that do not attempt to use modal logic
 to express communication. Chlipala's work on the Ur/Web programming language
-allows you to write front and back ends simultaneously.\cite{chlipala2010ur}
+allows you to write front and back ends simultaneously and guarantees certain
+correctness properties about well typed programs.\cite{chlipala2010ur}
 Opa\cite{opa} is another example with a simpler type system and similar to this
 thesis, it compiles to JavaScript on both ends, using Node.js for the back end.
 It is also a superset of JavaScript, which allows usage of existing JavaScript
@@ -2752,7 +2782,8 @@ writing a client-server application as a single program.  Meteor\cite{meteor}
 is another relevant project that integrates front end events with database and
 Socket.IO.  There are also other functional web programming languages that do
 not handle communication but attempt to solve the infamous JavaScript problem
-such as Elm\cite{elm} and PureScript\footnote{\url{http://www.purescript.org/}}.
+such as Elm\cite{elm} and
+PureScript\footnote{\url{http://www.purescript.org/}}.
 
 % }}}
 
